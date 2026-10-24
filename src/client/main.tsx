@@ -252,21 +252,18 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                     }}
                   />
                   <label htmlFor="session-address">Adresse de la session</label>
-                  <div className="address-field">
-                    <span>{location.origin}/</span>
-                    <input
-                      id="session-address"
-                      required
-                      maxLength={60}
-                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                      placeholder="excel"
-                      value={slug}
-                      onChange={(e) => {
-                        setSlugEdited(true);
-                        setSlug(e.target.value.toLowerCase());
-                      }}
-                    />
-                  </div>
+                  <input
+                    id="session-address"
+                    required
+                    maxLength={60}
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    placeholder="excel"
+                    value={slug}
+                    onChange={(e) => {
+                      setSlugEdited(true);
+                      setSlug(e.target.value.toLowerCase());
+                    }}
+                  />
                   <label htmlFor="expires">Tout effacer le</label>
                   <input
                     id="expires"
@@ -782,19 +779,16 @@ function Room({ id, me }: { id: string; me: Me }) {
                   <>
                     <div className="settings-field">
                       <label htmlFor="new-address">Adresse de la session</label>
-                      <div className="address-field">
-                        <span>{location.origin}/</span>
-                        <input
-                          id="new-address"
-                          required
-                          maxLength={60}
-                          pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                          value={addressDraft}
-                          onChange={(e) =>
-                            setAddressDraft(e.target.value.toLowerCase())
-                          }
-                        />
-                      </div>
+                      <input
+                        id="new-address"
+                        required
+                        maxLength={60}
+                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                        value={addressDraft}
+                        onChange={(e) =>
+                          setAddressDraft(e.target.value.toLowerCase())
+                        }
+                      />
                     </div>
                     <div className="settings-field">
                       <label htmlFor="new-deadline">

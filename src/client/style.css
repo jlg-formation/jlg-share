@@ -1195,36 +1195,6 @@ body:has(.room-layout) {
   }
 }
 
-.address-field {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface);
-  overflow: hidden;
-}
-.address-field:focus-within {
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-.address-field > span {
-  padding-left: 10px;
-  font-size: 0.875rem;
-  color: var(--muted);
-  white-space: nowrap;
-  max-width: 65%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.address-field input {
-  border: 0;
-  border-radius: 0;
-  min-width: 0;
-  flex: 1;
-  padding-left: 2px;
-  box-shadow: none;
-}
-
 .room-actions .copy-session-link {
   display: none;
 }
