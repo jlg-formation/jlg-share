@@ -37,7 +37,16 @@ const server = Bun.serve({
   fetch: app.fetch,
   websocket: app.websocket,
 });
-console.log(`JLG Share prêt sur le port ${server.port}`);
+console.log(`JLG Share — site : ${origin}/`);
+console.log(`Serveur démarré : ${server.url}`);
+if (
+  ["localhost", "127.0.0.1"].includes(new URL(origin).hostname) &&
+  new URL(origin).port === "5173"
+) {
+  console.log(
+    "Pour ouvrir le site, lancez aussi bun run dev:web dans un second terminal.",
+  );
+}
 const stop = () => {
   app.close();
   media?.close();
