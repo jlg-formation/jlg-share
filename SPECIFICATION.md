@@ -1,6 +1,6 @@
 # JLG Share — Spécification initiale
 
-Version : 0.10 — 24 octobre 2026
+Version : 0.11 — 24 octobre 2026
 Statut : document de travail, fondé sur les échanges avec le formateur.
 
 Ce document distingue les décisions déjà retenues des propositions de conception. Les propositions et les questions ouvertes pourront évoluer avant ou pendant le développement.
@@ -66,7 +66,7 @@ Propositions :
 - Une session peut être fermée aux participants sans être immédiatement supprimée.
 - Le formateur peut supprimer la session et ses ressources.
 
-À la création de chaque session, le formateur renseigne obligatoirement la date à laquelle toutes les informations de session seront effacées. Un calendrier et un sélecteur d'heure permettent de choisir une échéance précise. La date et l'heure sont validées comme champs de création ; le fuseau affiché par défaut proposé est Europe/Paris. Le formulaire indique clairement le fuseau et récapitule le moment de suppression avant création. Le serveur refuse une échéance absente, invalide ou déjà passée et conserve l'instant correspondant en UTC.
+À la création de chaque session, le formateur renseigne obligatoirement la date à laquelle toutes les informations de session seront effacées. Un calendrier et un sélecteur d'heure permettent de choisir une échéance précise. Le champ est prérempli à la date et l'heure courantes plus 24 heures, dans l'heure locale affichée ; le formateur peut modifier cette proposition avant création. Il s'agit d'une valeur par défaut et non d'une limite de conservation imposée. La date et l'heure sont validées comme champs de création ; le fuseau affiché par défaut proposé est Europe/Paris. Le formulaire indique clairement le fuseau et récapitule le moment de suppression avant création. Le serveur refuse une échéance absente, invalide ou déjà passée et conserve l'instant correspondant en UTC.
 
 Cette décision remplace toutes les règles précédentes fondées sur la présence, la fermeture du navigateur et le calcul de 24 heures après le départ. Aucune limite automatique de 24 heures ne s'ajoute à la date choisie. Fermer le navigateur, revenir dans la session, une coupure réseau ou l'activité des stagiaires ne modifient pas l'échéance. La présence du formateur n'est pas utilisée pour calculer la conservation des ressources.
 

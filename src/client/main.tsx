@@ -107,7 +107,9 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     [busy, setBusy] = useState(false),
     [sessions, setSessions] = useState<Session[]>([]),
     [title, setTitle] = useState(""),
-    [expires, setExpires] = useState(""),
+    [expires, setExpires] = useState(() =>
+      localDate(Date.now() + 24 * 60 * 60 * 1000),
+    ),
     [code, setCode] = useState(""),
     [name, setName] = useState(me.name);
   async function refresh() {

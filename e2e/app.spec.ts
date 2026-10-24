@@ -14,7 +14,15 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await page.getByLabel("Votre nom dans les échanges").fill("Jean-Louis");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await page.getByLabel("Titre de la session").fill("Atelier Excel");
-  const tomorrow = new Date(Date.now() + 86400000);
+  const defaultDelay = await page
+    .getByLabel("Tout effacer le")
+    .evaluate(
+      (element) =>
+        new Date((element as HTMLInputElement).value).getTime() - Date.now(),
+    );
+  expect(defaultDelay).toBeGreaterThan(24 * 60 * 60 * 1000 - 120_000);
+  expect(defaultDelay).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+  const tomorrow = new Date(Date.now() + 2 * 86400000);
   const local = new Date(
     tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000,
   )
