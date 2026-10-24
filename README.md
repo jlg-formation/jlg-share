@@ -37,7 +37,19 @@ bun start
 
 Ouvrir [http://localhost:3000](http://localhost:3000). Le chat et les fichiers fonctionnent sans LiveKit. Le bouton de partage d'écran indique son indisponibilité tant que ses paramètres ne sont pas configurés.
 
-Pour développer avec rechargement de l'interface : conserver `APP_ORIGIN=http://localhost:5173`, lancer `bun run dev` et, dans un second terminal, `bun run dev:web`. Ouvrir alors le port 5173.
+Pour développer avec rechargement de l'interface, lancer dans un premier terminal :
+
+```sh
+bun run dev
+```
+
+Puis, dans un second terminal, depuis le même dossier :
+
+```sh
+bun run dev:web
+```
+
+Ouvrir **http://localhost:5173/**. Les deux terminaux doivent rester ouverts. `bun run dev` fixe automatiquement l'origine de développement sur cette adresse, indépendamment de la valeur de production dans `.env`. L'alias **http://127.0.0.1:5173/** est également accepté en développement. Vite refuse de changer silencieusement de port si 5173 est déjà occupé.
 
 ## Vérifications
 
@@ -47,6 +59,7 @@ bun run check
 bun run test
 bun run build
 bun run test:e2e
+bun run test:e2e:dev
 ```
 
 Les tests navigateur utilisent Edge installé sur Windows. En CI, Chromium est installé par le workflow. Les données des tests sont créées dans des répertoires temporaires séparés. `test-results/` contient les captures des essais et n'est pas versionné.

@@ -5,6 +5,7 @@ import type { Server, ServerWebSocket } from "bun";
 import { Store, AppError, fail, id, nickname } from "./store";
 import { FILE_LIMIT } from "../shared/types";
 import type { MediaService } from "./media";
+import { allowsOrigin } from "./origin";
 
 export type Config = {
   origin: string;
@@ -151,7 +152,10 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
   ): Promise<Response | undefined> {
     const path = url.pathname;
     const remote = server?.requestIP(req)?.address ?? "local";
-    if (req.method !== "GET" && req.headers.get("origin") !== config.origin)
+    if (
+      req.method !== "GET" &&
+      !allowsOrigin(req.headers.get("origin"), config)
+    )
       fail(403, "Origine de la demande refusée.");
     if (path === "/api/health") return json({ ok: true });
     if (path === "/api/me" && req.method === "GET") {
@@ -568,7 +572,7 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
         return json(result);
       }
       if (url.pathname === "/ws") {
-        if (req.headers.get("origin") !== config.origin)
+        if (!allowsOrigin(req.headers.get("origin"), config))
           fail(403, "Origine refusée.");
         const browserId = requireBrowser(req);
         const sessionId = url.searchParams.get("session") ?? "";
