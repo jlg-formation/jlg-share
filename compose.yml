@@ -1,0 +1,84 @@
+# Production Linux VPS. Host networking is deliberate for WebRTC's public UDP ports.
+name: jlg-share
+services:
+  app:
+    build: .
+    image: jlg-share:${APP_VERSION:-local}
+    network_mode: host
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      APP_ORIGIN: https://${APP_DOMAIN:?APP_DOMAIN requis}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?ADMIN_PASSWORD_HASH requis}
+      LIVEKIT_URL: wss://${MEDIA_DOMAIN:?MEDIA_DOMAIN requis}
+      LIVEKIT_API_URL: http://127.0.0.1:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?LIVEKIT_API_KEY requis}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?LIVEKIT_API_SECRET requis}
+    volumes: [app_data:/data]
+    healthcheck:
+      test:
+        [
+          CMD,
+          bun,
+          -e,
+          "const r = await fetch('http://127.0.0.1:3000/api/health'); process.exit(r.ok ? 0 : 1)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 15s
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: "2" }
+  livekit:
+    image: livekit/livekit-server:v1.13.10
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          port_range_start: 50000
+          port_range_end: 50100
+          use_external_ip: true
+        turn:
+          enabled: true
+          udp_port: 3478
+        keys:
+          ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+        webhook:
+          api_key: ${LIVEKIT_API_KEY}
+          urls:
+            - http://127.0.0.1:3000/api/media/webhook
+        logging:
+          level: warn
+    # The server reads LIVEKIT_CONFIG directly; no secret is stored in this repository.
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: "2" }
+  caddy:
+    image: caddy:2.11.7-alpine
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      MEDIA_DOMAIN: ${MEDIA_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL requis}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: { condition: service_healthy }
+    logging:
+      driver: json-file
+      options: { max-size: 5m, max-file: "2" }
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:
