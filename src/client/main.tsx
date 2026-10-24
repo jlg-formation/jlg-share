@@ -6,6 +6,7 @@ import { api, ApiError, bytes, date, localDate, upload } from "./api";
 import { suggestAddress } from "../shared/address";
 import "./style.css";
 import { Screen } from "./Screen";
+import { ThemeToggle } from "./ThemeToggle";
 
 type Me = { admin: boolean; name: string };
 function Icon({ name }: { name: string }) {
@@ -112,6 +113,7 @@ function App() {
     return (
       <main className="gate">
         <Brand />
+        <ThemeToggle />
         <Notice>{error}</Notice>
         <button onClick={() => location.reload()}>Réessayer</button>
       </main>
@@ -120,6 +122,7 @@ function App() {
     return (
       <main className="gate">
         <Brand />
+        <ThemeToggle />
         <p role="status">Ouverture de votre espace…</p>
       </main>
     );
@@ -187,6 +190,7 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     <>
       <header className="topbar">
         <Brand />
+        <ThemeToggle />
         {me.admin && (
           <button
             className="quiet"
@@ -585,6 +589,7 @@ function Room({ id, me }: { id: string; me: Me }) {
     return (
       <main className="gate">
         <Brand />
+        <ThemeToggle />
         <div className="card">
           <span className="eyebrow">ESPACE TEMPORAIRE</span>
           <h1>Cette session est terminée.</h1>
@@ -600,7 +605,7 @@ function Room({ id, me }: { id: string; me: Me }) {
       <>
         <header className="topbar">
           <Brand />
-          <span className="top-caption">Bienvenue dans votre formation</span>
+          <ThemeToggle />
         </header>
         <main className="gate">
           <section className="card join-card">
@@ -680,10 +685,10 @@ function Room({ id, me }: { id: string; me: Me }) {
           <h1 title={session.title}>{session.title}</h1>
           <span
             className="connection"
-            title={connected ? "En direct" : "Reconnexion…"}
+            title={connected ? "Connecté" : "Reconnexion…"}
           >
             <i className={connected ? "online" : ""} />
-            {connected ? "En direct" : "Reconnexion…"}
+            {!connected && "Reconnexion…"}
           </span>
         </div>
         <span className="identity">
@@ -691,6 +696,7 @@ function Room({ id, me }: { id: string; me: Me }) {
           {admin ? " (admin)" : ""}
         </span>
         <div className="room-actions">
+          <ThemeToggle />
           <button
             className="secondary copy-session-link"
             onClick={() => copy(location.origin + "/" + session.slug)}
