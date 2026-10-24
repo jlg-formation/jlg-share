@@ -4,6 +4,8 @@
 
 Configuration préparée pour un VPS Linux unique. L'installation réelle, les ports, les certificats et la diffusion WebRTC doivent être validés sur ce VPS. Docker n'était pas disponible sur le poste de développement lors de la première implémentation.
 
+La [première exécution GitHub Actions](https://github.com/jlg-formation/jlg-share/actions/runs/40098794465) a depuis validé la construction Docker et `docker compose config --quiet` sous Linux avec des valeurs fictives, ainsi que les tests et parcours Chromium. Cette vérification ne constitue pas un déploiement sur le VPS ni un essai des flux LiveKit.
+
 ## Préparer le VPS une fois
 
 1. Installer Linux, Docker Engine et son plugin Compose depuis leur documentation officielle. Prévoir les mises à jour du système.

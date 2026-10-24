@@ -86,9 +86,9 @@ Voir la [spécification](SPECIFICATION.md), l'[ADR LiveKit](docs/adr/0001-liveki
 
 ## Limites de validation actuelles
 
-Le partage d'écran est intégré mais sa transmission réelle, TURN et la charge de vingt spectateurs doivent encore être validés sur un environnement LiveKit et les réseaux de formation. Le test des vingt connexions concerne le **chat**, pas vingt flux vidéo. Les essais navigateur locaux ont été réalisés sur Edge ; Firefox, Chrome, Brave et Safari restent à vérifier séparément.
+Le partage d'écran est intégré mais sa transmission réelle, TURN et la charge de vingt spectateurs doivent encore être validés sur un environnement LiveKit et les réseaux de formation. Le test des vingt connexions concerne le **chat**, pas vingt flux vidéo. Les parcours navigateur sont vérifiés sur Edge en local et Chromium sous Linux en CI ; Firefox, Chrome, Brave et Safari restent à vérifier séparément.
 
-Les fichiers Docker et workflows sont préparés ; la construction Docker et l'installation Linux restent à exécuter sur un hôte équipé. La publication GitHub ne déclenche pas le déploiement : aucun VPS ni DNS n'est modifié.
+La [première vérification GitHub Actions](https://github.com/jlg-formation/jlg-share/actions/runs/40098794465) a validé les tests, la compilation, les deux modes des parcours navigateur, la construction Docker et la structure Compose sous Linux. L'installation réelle sur le VPS reste à valider. La publication GitHub ne déclenche pas le déploiement : aucun VPS ni DNS n'est modifié.
 
 Les échéances sont vérifiées par le serveur à chaque accès et la purge est programmée. Un VPS arrêté ne peut pas effacer ses fichiers pendant son arrêt ; les données expirées sont purgées au redémarrage avant d'ouvrir le service. Les copies déjà téléchargées par les participants ne peuvent pas être effacées à distance. Les sauvegardes OVH doivent être configurées pour respecter la suppression.
 
