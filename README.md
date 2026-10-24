@@ -20,21 +20,15 @@ Installer Bun **1.4.2**, puis depuis le répertoire du projet :
 bun install --frozen-lockfile
 ```
 
-Copier `.env.example` vers `.env`. Générer un hachage du mot de passe dans un terminal interactif :
+Configurer le mot de passe dans un terminal interactif :
 
 ```sh
 bun run password
 ```
 
-Reporter la valeur dans `.env`, entre apostrophes pour préserver les signes `$` :
+La commande crée `.env` à partir de `.env.example` si nécessaire et y enregistre automatiquement le hachage du mot de passe, en préservant les autres réglages. Le mot de passe saisi n'est pas affiché et `.env` est exclu de Git. Pour afficher uniquement un hachage destiné à une autre installation, utiliser `bun run password --print`.
 
-```dotenv
-ADMIN_PASSWORD_HASH='$argon2id$...'
-APP_ORIGIN=http://localhost:3000
-COOKIE_SECURE=false
-```
-
-Le mot de passe saisi n'est pas affiché et ne doit pas être commité. Puis :
+Pour le lancement local avec l'interface déjà construite, définir `APP_ORIGIN=http://localhost:3000` dans `.env`, puis :
 
 ```sh
 bun run build
