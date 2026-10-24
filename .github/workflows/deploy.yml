@@ -7,41 +7,44 @@ concurrency:
   group: production
   cancel-in-progress: false
 jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  scan:
+    uses: ./.github/workflows/secrets.yml
   deploy:
+    needs: [verify, scan]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://share.jlg-consulting.com
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
-      - run: bun install --frozen-lockfile
-      - run: bun run check
-      - run: bun run test
-      - run: bun run build
-      - run: bunx playwright install --with-deps chromium
-      - run: bun run test:e2e
-      - name: Préparer la connexion SSH
-        env:
-          DEPLOY_KEY: ${{ secrets.VPS_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
+          persist-credentials: false
       - name: Transférer et déployer la version vérifiée
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
           RELEASE: ${{ github.sha }}
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
           case "$VPS_HOST" in ''|*[!a-zA-Z0-9.-]*) exit 1;; esac
           case "$VPS_USER" in ''|*[!a-zA-Z0-9_-]*) exit 1;; esac
-          git archive --format=tar.gz -o release.tar.gz HEAD
-          ssh -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" 'mkdir -p /opt/jlg-share/releases'
-          scp -o StrictHostKeyChecking=yes release.tar.gz "$VPS_USER@$VPS_HOST:/opt/jlg-share/releases/$RELEASE.tar.gz"
-          ssh -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "mkdir -p /opt/jlg-share/releases/$RELEASE && tar -xzf /opt/jlg-share/releases/$RELEASE.tar.gz -C /opt/jlg-share/releases/$RELEASE && bash /opt/jlg-share/releases/$RELEASE/deploy/release.sh $RELEASE"
+          [[ "$RELEASE" =~ ^[a-f0-9]{40}$ ]]
+          umask 077
+          directory="$(mktemp -d)"
+          trap 'rm -rf -- "$directory"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$directory/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$directory/known_hosts"
+          options=(-F /dev/null -i "$directory/key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$directory/known_hosts" -o ConnectTimeout=15)
+          git archive --format=tar.gz -o "$directory/release.tar.gz" HEAD
+          ssh "${options[@]}" "$VPS_USER@$VPS_HOST" 'test -s /opt/jlg-share/.env && mkdir -p /opt/jlg-share/releases'
+          scp "${options[@]}" "$directory/release.tar.gz" "$VPS_USER@$VPS_HOST:/opt/jlg-share/releases/$RELEASE.tar.gz"
+          ssh "${options[@]}" "$VPS_USER@$VPS_HOST" "mkdir -p /opt/jlg-share/releases/$RELEASE && tar -xzf /opt/jlg-share/releases/$RELEASE.tar.gz -C /opt/jlg-share/releases/$RELEASE && bash /opt/jlg-share/releases/$RELEASE/deploy/release.sh $RELEASE"
+      - name: Vérifier le point d'accès public depuis GitHub
+        run: curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 15 https://share.jlg-consulting.com/api/health

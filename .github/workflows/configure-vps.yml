@@ -1,0 +1,42 @@
+name: Initialiser la configuration du VPS
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: production
+  cancel-in-progress: false
+jobs:
+  configure:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Transférer le hachage et créer les clés sur le VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.INITIAL_ADMIN_PASSWORD_HASH }}
+          ACME_EMAIL: ${{ secrets.INITIAL_ACME_EMAIL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$VPS_HOST" in ''|*[!a-zA-Z0-9.-]*) exit 1;; esac
+          case "$VPS_USER" in ''|*[!a-zA-Z0-9_-]*) exit 1;; esac
+          test -n "$ADMIN_PASSWORD_HASH"
+          test -n "$ACME_EMAIL"
+          umask 077
+          directory="$(mktemp -d)"
+          trap 'rm -rf -- "$directory"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$directory/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$directory/known_hosts"
+          options=(-F /dev/null -i "$directory/key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$directory/known_hosts" -o ConnectTimeout=15)
+          scp "${options[@]}" deploy/configure.sh "$VPS_USER@$VPS_HOST:/opt/jlg-share/configure.sh"
+          printf '%s\n' "$ADMIN_PASSWORD_HASH" "$ACME_EMAIL" |
+            ssh "${options[@]}" "$VPS_USER@$VPS_HOST" 'bash /opt/jlg-share/configure.sh'

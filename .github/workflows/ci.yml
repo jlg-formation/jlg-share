@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -18,10 +20,14 @@ jobs:
       - run: bun run check
       - run: bun run test
       - run: bun run build
+      - name: Vérifier l'initialisation et les retours arrière avec des services simulés
+        run: bash scripts/check-deployment.sh
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
       - run: bun run test:e2e:dev
       - run: docker build -t jlg-share:check .
+      - name: Vérifier l'image exécutée et les fichiers publics
+        run: bash scripts/check-container.sh
       - name: Validate production configuration without displaying secrets
         env:
           APP_DOMAIN: share.example.test
