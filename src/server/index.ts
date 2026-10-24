@@ -1,0 +1,12 @@
+import { Store } from './store';
+import { createApp } from './app';
+const passwordHash=process.env.ADMIN_PASSWORD_HASH;
+if(!passwordHash?.startsWith('$argon2')) throw new Error('ADMIN_PASSWORD_HASH requis : générez-le avec bun run password.');
+const origin=process.env.APP_ORIGIN??'http://localhost:5173';
+if(new URL(origin).origin!==origin) throw new Error('APP_ORIGIN doit être une origine sans chemin ni barre finale.');
+const store=new Store(process.env.DATA_DIR??'./data');
+const app=createApp(store,{origin,passwordHash,secure:process.env.COOKIE_SECURE==='true'});
+const server=Bun.serve({hostname:process.env.HOST??'127.0.0.1',port:Number(process.env.PORT??3000),maxRequestBodySize:50_100_000,idleTimeout:60,fetch:app.fetch,websocket:app.websocket});
+console.log(`JLG Share prêt sur le port ${server.port}`);
+const stop=()=>{ app.close(); server.stop(true); store.db.close(); process.exit(0); };
+process.on('SIGTERM',stop); process.on('SIGINT',stop);
