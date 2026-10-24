@@ -1,0 +1,39 @@
+name: Vérifier l'accès au VPS
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  check-access:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - name: Vérifier SSH, Docker et les droits du répertoire de livraison
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$VPS_HOST" in ''|*[!a-zA-Z0-9.-]*) exit 1;; esac
+          case "$VPS_USER" in ''|*[!a-zA-Z0-9_-]*) exit 1;; esac
+          test -n "$DEPLOY_KEY"
+          test -n "$KNOWN_HOSTS"
+          umask 077
+          directory="$(mktemp -d)"
+          trap 'rm -rf -- "$directory"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$directory/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$directory/known_hosts"
+          ssh -F /dev/null \
+            -i "$directory/key" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$directory/known_hosts" \
+            -o ConnectTimeout=15 \
+            -o ConnectionAttempts=1 \
+            "$VPS_USER@$VPS_HOST" \
+            'set -eu; test "$(id -un)" = jlg-deploy; docker compose version; docker info --format "{{.ServerVersion}}"; test -w /opt/jlg-share/releases; echo VPS_ACCESS_OK'
