@@ -1,4 +1,5 @@
 export type Session = {
+  slug: string;
   id: string;
   title: string;
   expiresAt: number;

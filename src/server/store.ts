@@ -3,6 +3,7 @@ import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Session, Participant, Publication } from "../shared/types";
 import { SESSION_LIMIT } from "../shared/types";
+import { suggestAddress, reservedAddresses } from "../shared/address";
 
 export class AppError extends Error {
   constructor(
@@ -63,6 +64,13 @@ export class Store {
       CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, size INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS publications_session ON publications(session_id,created_at);
       CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);`);
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS session_addresses (slug TEXT PRIMARY KEY, session_id TEXT NOT NULL UNIQUE REFERENCES sessions(id) ON DELETE CASCADE)",
+    );
+    for (const row of this.db.query("SELECT id FROM sessions").all() as {
+      id: string;
+    }[])
+      this.address(row.id);
     // A single application process owns this directory. Incomplete uploads cannot survive a restart.
     this.db.exec("DELETE FROM uploads");
     this.purge();
@@ -75,6 +83,69 @@ export class Store {
     );
     for (const entry of readdirSync(join(directory, "files")))
       if (!keep.has(entry)) unlinkSync(join(directory, "files", entry));
+  }
+  resolveSession(reference: string): string {
+    const row = this.db
+      .query("SELECT session_id FROM session_addresses WHERE slug=?")
+      .get(reference) as { session_id: string } | null;
+    return row?.session_id ?? reference;
+  }
+  validateAddress(value: unknown): string {
+    if (typeof value !== "string")
+      fail(400, "Choisissez une adresse pour la session.");
+    const slug = value.trim().toLowerCase();
+    if (
+      slug.length < 1 ||
+      slug.length > 60 ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
+      reservedAddresses.has(slug)
+    )
+      fail(
+        400,
+        "Adresse invalide : utilisez des lettres sans accent, des chiffres et des tirets (60 caractères maximum).",
+      );
+    return slug;
+  }
+  setAddress(sessionId: string, value: unknown): string {
+    const slug = this.validateAddress(value);
+    const taken = this.db
+      .query("SELECT session_id FROM session_addresses WHERE slug=?")
+      .get(slug) as { session_id: string } | null;
+    const internal = this.db
+      .query("SELECT id FROM sessions WHERE id=? AND id<>?")
+      .get(slug, sessionId);
+    if ((taken && taken.session_id !== sessionId) || internal)
+      fail(409, "Cette adresse est déjà utilisée. Choisissez-en une autre.");
+    this.db
+      .query(
+        "INSERT INTO session_addresses (slug,session_id) VALUES (?,?) ON CONFLICT(session_id) DO UPDATE SET slug=excluded.slug",
+      )
+      .run(slug, sessionId);
+    return slug;
+  }
+  address(sessionId: string): string {
+    const existing = this.db
+      .query("SELECT slug FROM session_addresses WHERE session_id=?")
+      .get(sessionId) as { slug: string } | null;
+    if (existing) return existing.slug;
+    const row = this.db
+      .query("SELECT title FROM sessions WHERE id=?")
+      .get(sessionId) as { title: string } | null;
+    if (!row) fail(404, "Session introuvable.");
+    let base = suggestAddress(row.title) || "session";
+    if (reservedAddresses.has(base)) base = "session";
+    let slug = base;
+    let suffix = 2;
+    while (
+      this.db
+        .query("SELECT slug FROM session_addresses WHERE slug=?")
+        .get(slug) ||
+      this.db
+        .query("SELECT id FROM sessions WHERE id=? AND id<>?")
+        .get(slug, sessionId)
+    )
+      slug = base.slice(0, 54) + "-" + suffix++;
+    return this.setAddress(sessionId, slug);
   }
   path(fileId: string) {
     return join(this.directory, "files", fileId);
@@ -130,6 +201,7 @@ export class Store {
       .get(sessionId) as { size: number };
     return {
       id: s.id,
+      slug: this.address(s.id),
       title: s.title,
       expiresAt: s.expires_at,
       closed: !!s.closed,

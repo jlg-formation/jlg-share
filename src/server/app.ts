@@ -4,6 +4,7 @@ import { resolve, sep } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
 import { Store, AppError, fail, id, nickname } from "./store";
 import { FILE_LIMIT } from "../shared/types";
+import { suggestAddress } from "../shared/address";
 import type { MediaService } from "./media";
 import { allowsOrigin } from "./origin";
 
@@ -256,9 +257,15 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
         expiry(expiresAt);
         const sessionId =
           id().slice(0, 8) + "-" + randomBytes(3).toString("hex");
-        store.db
-          .query("INSERT INTO sessions VALUES (?,?,?,0,?)")
-          .run(sessionId, sessionTitle, expiresAt, hash);
+        const slug = store.validateAddress(
+          input.slug ?? (suggestAddress(sessionTitle) || "session"),
+        );
+        store.db.transaction(() => {
+          store.db
+            .query("INSERT INTO sessions VALUES (?,?,?,0,?)")
+            .run(sessionId, sessionTitle, expiresAt, hash);
+          store.setAddress(sessionId, slug);
+        })();
         const name = (
           store.db
             .query("SELECT value FROM settings WHERE key='admin_name'")
@@ -271,12 +278,13 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
     }
     const match = path.match(/^\/api\/sessions\/([a-zA-Z0-9-]+)(?:\/(.*))?$/);
     if (!match) fail(404, "Adresse introuvable.");
-    const sessionId = match[1];
+    const sessionId = store.resolveSession(match[1]);
     const action = match[2] ?? "";
     const s = store.raw(sessionId);
     if (!action && req.method === "GET")
       return json({
         id: s.id,
+        slug: store.address(s.id),
         title: s.title,
         expiresAt: s.expires_at,
         protected: !!s.code_hash,
@@ -316,16 +324,21 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       const input = await body(req);
       store.requireAdmin(browserId);
       store.raw(sessionId);
-      if (input.expiresAt !== undefined)
-        store.db
-          .query("UPDATE sessions SET expires_at=? WHERE id=?")
-          .run(expiry(input.expiresAt), sessionId);
-      if (input.closed !== undefined) {
-        if (typeof input.closed !== "boolean") fail(400, "État invalide.");
-        store.db
-          .query("UPDATE sessions SET closed=? WHERE id=?")
-          .run(input.closed ? 1 : 0, sessionId);
-      }
+      const nextExpiry =
+        input.expiresAt === undefined ? undefined : expiry(input.expiresAt);
+      if (input.closed !== undefined && typeof input.closed !== "boolean")
+        fail(400, "État invalide.");
+      store.db.transaction(() => {
+        if (input.slug !== undefined) store.setAddress(sessionId, input.slug);
+        if (nextExpiry !== undefined)
+          store.db
+            .query("UPDATE sessions SET expires_at=? WHERE id=?")
+            .run(nextExpiry, sessionId);
+        if (input.closed !== undefined)
+          store.db
+            .query("UPDATE sessions SET closed=? WHERE id=?")
+            .run(input.closed ? 1 : 0, sessionId);
+      })();
       schedule();
       notify(sessionId);
       if (input.closed === true)
@@ -575,7 +588,9 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
         if (!allowsOrigin(req.headers.get("origin"), config))
           fail(403, "Origine refusée.");
         const browserId = requireBrowser(req);
-        const sessionId = url.searchParams.get("session") ?? "";
+        const sessionId = store.resolveSession(
+          url.searchParams.get("session") ?? "",
+        );
         store.actor(sessionId, browserId);
         if (server?.upgrade(req, { data: { sessionId, browserId } })) return;
         fail(400, "Connexion temps réel indisponible.");
