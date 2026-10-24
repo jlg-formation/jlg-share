@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   font-synthesis: none;
-  font-size: 15px;
+  font-size: 106.25%;
   line-height: 1.55;
   color: var(--text);
   background: var(--background);
@@ -10,7 +10,7 @@
   --background: #f6f7f3;
   --green: #214d43;
   --dark: #163e35;
-  --muted: #617267;
+  --muted: #607166;
   --border: #cfd9d0;
   --surface: #fff;
   --subtle: #f9fbf7;
@@ -105,12 +105,12 @@ p {
   margin-top: 0;
 }
 h2 {
-  font-size: 22px;
+  font-size: 1.375rem;
   letter-spacing: -0.6px;
   line-height: 1.3;
 }
 h3 {
-  font-size: 16px;
+  font-size: 1rem;
 }
 input,
 textarea {
@@ -133,7 +133,7 @@ textarea {
 }
 label {
   display: block;
-  font-size: 13px;
+  font-size: 0.875rem;
   font-weight: 600;
   margin: 15px 0 7px;
 }
@@ -166,16 +166,16 @@ input[type="datetime-local"] {
   color: var(--muted);
 }
 .small {
-  font-size: 12px;
+  font-size: 0.875rem;
 }
 .hint {
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin: 7px 0 0;
 }
 .eyebrow {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   letter-spacing: 1.9px;
   font-weight: 750;
   color: var(--muted);
@@ -194,7 +194,7 @@ input[type="datetime-local"] {
   display: inline-flex;
   align-items: center;
   gap: 11px;
-  font-size: 22px;
+  font-size: 1.375rem;
   text-decoration: none;
   color: var(--dark);
   white-space: nowrap;
@@ -213,18 +213,18 @@ input[type="datetime-local"] {
   width: 37px;
   height: 37px;
   font-weight: 750;
-  font-size: 28px;
+  font-size: 1.75rem;
   padding-bottom: 5px;
   letter-spacing: -3px;
   padding-right: 3px;
 }
 .top-caption {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.875rem;
   margin-left: auto;
 }
 .topbar > .quiet {
-  font-size: 12px;
+  font-size: 0.875rem;
 }
 .home {
   max-width: 1120px;
@@ -245,7 +245,7 @@ input[type="datetime-local"] {
   color: var(--muted);
 }
 .hero p {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--muted);
   line-height: 1.8;
 }
@@ -273,13 +273,13 @@ input[type="datetime-local"] {
 }
 .note-number {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   letter-spacing: 1.5px;
   color: var(--muted);
   margin-bottom: 30px;
 }
 .welcome-note h2 {
-  font-size: 29px;
+  font-size: 1.8125rem;
   font-weight: 550;
   letter-spacing: -1px;
 }
@@ -297,7 +297,7 @@ input[type="datetime-local"] {
   background: var(--tint);
   padding: 5px 10px;
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 footer {
@@ -305,7 +305,7 @@ footer {
   margin: 0 auto;
   padding: 22px 0 35px;
   border-top: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
   display: flex;
   justify-content: space-between;
@@ -323,7 +323,7 @@ footer {
   color: var(--muted);
   padding: 2px 9px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .session-card {
   display: flex;
@@ -340,7 +340,7 @@ footer {
   margin: 0 0 4px;
 }
 .session-card p {
-  font-size: 12px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin: 0 0 8px;
 }
@@ -353,7 +353,7 @@ footer {
 }
 .empty-list p {
   margin: 10px 0 0;
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 .profile {
   border-top: 1px solid var(--border);
@@ -379,7 +379,7 @@ footer {
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 15px;
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 .gate {
   max-width: 530px;
@@ -390,7 +390,7 @@ footer {
   margin-bottom: 30px;
 }
 .gate h1 {
-  font-size: 29px;
+  font-size: 1.8125rem;
   line-height: 1.25;
   letter-spacing: -1px;
 }
@@ -420,7 +420,7 @@ body:has(.room-layout) {
   margin: 24px auto;
 }
 .login h1 {
-  font-size: 22px;
+  font-size: 1.375rem;
   margin: 0 0 20px;
   letter-spacing: -0.5px;
 }
@@ -437,12 +437,12 @@ body:has(.room-layout) {
   gap: 18px;
 }
 .room-layout .brand {
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 .room-layout .brand-icon {
   width: 30px;
   height: 30px;
-  font-size: 24px;
+  font-size: 1.5rem;
   border-radius: 8px;
 }
 .room-title {
@@ -453,7 +453,7 @@ body:has(.room-layout) {
   min-width: 0;
 }
 .room-title h1 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -462,7 +462,7 @@ body:has(.room-layout) {
   letter-spacing: 0;
 }
 .identity {
-  font-size: 11px;
+  font-size: 0.875rem;
   white-space: nowrap;
   max-width: 160px;
   overflow: hidden;
@@ -472,7 +472,7 @@ body:has(.room-layout) {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -493,7 +493,7 @@ body:has(.room-layout) {
 }
 .room-actions button {
   padding: 7px 10px;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .expiry-bar {
   display: flex;
@@ -502,7 +502,7 @@ body:has(.room-layout) {
   justify-content: space-between;
   padding: 6px 16px;
   gap: 12px;
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
   background: var(--tint);
@@ -556,7 +556,7 @@ body:has(.room-layout) {
   flex-shrink: 0;
 }
 .panel-heading h2 {
-  font-size: 13px;
+  font-size: 0.875rem;
   font-weight: 650;
   letter-spacing: 0;
   margin: 0;
@@ -587,17 +587,17 @@ body:has(.room-layout) {
   border-radius: 12px;
   background: var(--tint);
   color: var(--muted);
-  font-size: 25px;
+  font-size: 1.5625rem;
   margin-bottom: 17px;
 }
 .empty-chat h2 {
-  font-size: 17px;
+  font-size: 1.0625rem;
   letter-spacing: -0.2px;
   color: var(--muted);
   margin-bottom: 8px;
 }
 .empty-chat p {
-  font-size: 12px;
+  font-size: 0.875rem;
 }
 .message {
   display: flex;
@@ -611,7 +611,7 @@ body:has(.room-layout) {
   border-radius: 9px;
   background: var(--tint);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -633,20 +633,20 @@ body:has(.room-layout) {
   margin-bottom: 6px;
 }
 .message-meta strong {
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 650;
 }
 .message-meta time {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 .admin-label {
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 400;
   color: var(--muted);
 }
 .message-text {
-  font-size: 13px;
+  font-size: 0.875rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--muted);
@@ -654,22 +654,6 @@ body:has(.room-layout) {
 }
 .message-text a {
   text-underline-offset: 3px;
-}
-.message-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 5px;
-}
-.message-actions button {
-  padding: 1px 0;
-  border-radius: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 400;
-}
-.message-actions button:hover {
-  color: var(--green);
 }
 .file-bubble {
   display: flex;
@@ -688,12 +672,12 @@ body:has(.room-layout) {
 }
 .file-bubble strong {
   display: block;
-  font-size: 12px;
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
 .file-bubble span:not(.file-icon) {
   display: block;
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin-top: 2px;
 }
@@ -726,7 +710,7 @@ body:has(.room-layout) {
   padding: 12px 14px;
   min-height: 64px;
   max-height: 180px;
-  font-size: 13px;
+  font-size: 0.875rem;
   resize: vertical;
 }
 .composer-bottom {
@@ -736,7 +720,7 @@ body:has(.room-layout) {
   gap: 10px;
 }
 .attach {
-  font-size: 11px;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 .attach svg {
@@ -744,7 +728,7 @@ body:has(.room-layout) {
 }
 .keyboard {
   margin: 0 auto;
-  font-size: 9px;
+  font-size: 0.875rem;
 }
 .send {
   width: 33px;
@@ -760,7 +744,7 @@ body:has(.room-layout) {
 }
 .composer-hint {
   text-align: center;
-  font-size: 9px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin: 6px 0 0;
 }
@@ -777,10 +761,10 @@ body:has(.room-layout) {
   padding: 21px;
 }
 .resource-card h2 {
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 .resource-card .eyebrow {
-  font-size: 9px;
+  font-size: 0.875rem;
   letter-spacing: 1.4px;
   margin-bottom: 10px;
 }
@@ -788,7 +772,7 @@ body:has(.room-layout) {
   margin-bottom: 8px;
 }
 .resource-card p {
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .quota {
   height: 4px;
@@ -832,19 +816,19 @@ body:has(.room-layout) {
 }
 .file-list strong {
   display: block;
-  font-size: 11px;
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
   font-weight: 550;
 }
 .file-list span {
   display: block;
-  font-size: 9px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin-top: 3px;
 }
 .full {
   width: 100%;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .screen-card {
   border: 1px solid var(--border);
@@ -855,21 +839,21 @@ body:has(.room-layout) {
 }
 .screen-card h3 {
   margin: 12px 0 6px;
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 .screen-card p {
-  font-size: 11px;
+  font-size: 0.875rem;
   line-height: 1.7;
   margin-bottom: 0;
 }
 .participants-note {
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 .participants-note strong {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 .participants-note p {
@@ -903,7 +887,7 @@ body:has(.room-layout) {
   gap: 12px;
 }
 .manage h2 {
-  font-size: 17px;
+  font-size: 1.0625rem;
   margin: 0;
 }
 .manage form {
@@ -951,7 +935,7 @@ body:has(.room-layout) {
   min-height: 200px;
 }
 .resource-card h2 {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .resource-card .file-list {
   min-height: 0;
@@ -978,7 +962,7 @@ body:has(.room-layout) {
   padding: 0 5px;
 }
 .upload-progress {
-  font-size: 11px;
+  font-size: 0.875rem;
   color: var(--muted);
   margin-bottom: 9px;
 }
@@ -1001,7 +985,7 @@ body:has(.room-layout) {
   color: var(--button-text);
   border-radius: 9px;
   box-shadow: 0 5px 30px #163e3520;
-  font-size: 12px;
+  font-size: 0.875rem;
   z-index: 10;
 }
 .drop-overlay {
@@ -1039,14 +1023,14 @@ body:has(.room-layout) {
 .screen-card button {
   margin-top: 15px;
   width: 100%;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .screen-card .notice {
-  font-size: 11px;
+  font-size: 0.875rem;
   margin-top: 12px;
 }
 .screen-status {
-  font-size: 10px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1098,7 +1082,7 @@ body:has(.room-layout) {
     gap: 8px;
   }
   .room-title h1 {
-    font-size: 14px;
+    font-size: 0.875rem;
   }
   .room-actions {
     grid-column: 1/-1;
@@ -1109,7 +1093,7 @@ body:has(.room-layout) {
   }
   .expiry-bar {
     padding: 5px 12px;
-    font-size: 10px;
+    font-size: 0.875rem;
   }
   .expiry-bar > span:first-child {
     gap: 4px;
@@ -1122,7 +1106,7 @@ body:has(.room-layout) {
     border-bottom: 1px solid var(--border);
   }
   .mobile-tabs button {
-    font-size: 12px;
+    font-size: 0.875rem;
     padding: 5px 12px;
     background: transparent;
     color: var(--muted);
@@ -1178,7 +1162,7 @@ body:has(.room-layout) {
     text-align: center;
   }
   .inline > button {
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 }
 @media (max-height: 500px) {
@@ -1217,7 +1201,7 @@ body:has(.room-layout) {
 }
 .address-field > span {
   padding-left: 10px;
-  font-size: 12px;
+  font-size: 0.875rem;
   color: var(--muted);
   white-space: nowrap;
   max-width: 65%;
@@ -1266,4 +1250,175 @@ body:has(.room-layout) {
 }
 .message-text {
   color: var(--text);
+}
+
+button,
+.button {
+  min-height: 44px;
+}
+input {
+  min-height: 44px;
+}
+.message-text,
+.composer textarea {
+  font-size: 1rem;
+  color: var(--text);
+}
+.message-meta strong {
+  font-size: 0.9375rem;
+}
+.message-meta time,
+.admin-label {
+  font-size: 0.875rem;
+}
+.file-bubble strong,
+.file-list strong {
+  font-size: 1rem;
+}
+.file-bubble span:not(.file-icon),
+.file-list span {
+  font-size: 0.875rem;
+}
+.message-meta {
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-height: 44px;
+  margin-bottom: 2px;
+}
+.message-meta > strong {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.message-meta time {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+.publication-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+}
+.publication-menu-trigger:hover,
+.publication-menu-trigger[aria-expanded="true"] {
+  background: var(--tint);
+  color: var(--text);
+}
+.publication-menu {
+  position: fixed;
+  z-index: 50;
+  width: 232px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: 5px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px #0003;
+}
+.publication-menu > button,
+.publication-menu > a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.publication-menu > button:hover,
+.publication-menu > a:hover,
+.publication-menu > button:focus,
+.publication-menu > a:focus {
+  background: var(--tint);
+  outline: none;
+}
+.publication-menu .menu-danger {
+  color: var(--danger-text);
+}
+.theme-toggle,
+.room-actions .theme-toggle {
+  width: 44px;
+  height: 44px;
+  padding: 9px;
+}
+.send {
+  width: 44px;
+  height: 44px;
+}
+.send svg {
+  width: 21px;
+  height: 21px;
+}
+.attach svg {
+  width: 20px;
+  height: 20px;
+}
+.resources .resource-card {
+  min-height: 0;
+}
+.room-layout .notice {
+  font-size: 0.9375rem;
+}
+@media (max-width: 720px) {
+  .room-actions {
+    flex-wrap: wrap;
+  }
+  .room-title {
+    font-size: 1rem;
+  }
+  .room-title h1 {
+    font-size: 1rem;
+  }
+  .connection {
+    font-size: 0.875rem;
+  }
+  .mobile-tabs button {
+    min-height: 44px;
+  }
+  .message {
+    gap: 8px;
+  }
+  .message-meta {
+    gap: 6px;
+    flex-wrap: wrap;
+    position: relative;
+    padding-right: 44px;
+  }
+  .message-meta .publication-menu-trigger {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  .message-meta time {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .expiry-bar > span:first-child {
+    flex: 1;
+  }
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }

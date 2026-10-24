@@ -7,6 +7,7 @@ import { suggestAddress } from "../shared/address";
 import "./style.css";
 import { Screen } from "./Screen";
 import { ThemeToggle } from "./ThemeToggle";
+import { PublicationMenu } from "./PublicationMenu";
 
 type Me = { admin: boolean; name: string };
 function Icon({ name }: { name: string }) {
@@ -892,6 +893,53 @@ function Room({ id, me }: { id: string; me: Me }) {
                         }).format(p.createdAt)}
                         {p.editedAt ? " · modifié" : ""}
                       </time>
+                      <PublicationMenu
+                        label={
+                          p.kind === "file"
+                            ? "Actions du fichier " + p.filename
+                            : "Actions du message de " + p.nickname
+                        }
+                        actions={[
+                          ...(p.kind === "text"
+                            ? [
+                                {
+                                  label: "Copier",
+                                  run: () => {
+                                    void copy(p.text ?? "");
+                                  },
+                                },
+                              ]
+                            : [
+                                {
+                                  label: "Télécharger",
+                                  href: "/api" + base + "/files/" + p.id,
+                                },
+                              ]),
+                          ...(p.kind === "text" &&
+                          p.participantId === snapshot.me.id
+                            ? [
+                                {
+                                  label: "Modifier",
+                                  run: () => {
+                                    setEditing(p.id);
+                                    setEditText(p.text ?? "");
+                                  },
+                                },
+                              ]
+                            : []),
+                          ...(admin || p.participantId === snapshot.me.id
+                            ? [
+                                {
+                                  label: "Supprimer",
+                                  danger: true,
+                                  run: () => {
+                                    void remove(p);
+                                  },
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
                     </div>
                     {editing === p.id ? (
                       <form
@@ -946,27 +994,6 @@ function Room({ id, me }: { id: string; me: Me }) {
                         <LinkedText text={p.text ?? ""} />
                       </div>
                     )}
-                    <div className="message-actions">
-                      {p.kind === "text" && (
-                        <button onClick={() => copy(p.text ?? "")}>
-                          Copier
-                        </button>
-                      )}
-                      {p.kind === "text" &&
-                        p.participantId === snapshot.me.id && (
-                          <button
-                            onClick={() => {
-                              setEditing(p.id);
-                              setEditText(p.text ?? "");
-                            }}
-                          >
-                            Modifier
-                          </button>
-                        )}
-                      {(admin || p.participantId === snapshot.me.id) && (
-                        <button onClick={() => remove(p)}>Supprimer</button>
-                      )}
-                    </div>
                   </div>
                 </article>
               ))
@@ -1083,14 +1110,6 @@ function Room({ id, me }: { id: string; me: Me }) {
             </button>
           </section>
           <Screen sessionId={session.id} admin={admin} />
-          <div className="participants-note">
-            <strong>Dans cette session</strong>
-            <p>
-              {participants
-                .map((p) => p.nickname + (p.admin ? " (admin)" : ""))
-                .join(", ")}
-            </p>
-          </div>
         </aside>
       </div>
       {toast && (

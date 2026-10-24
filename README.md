@@ -10,7 +10,8 @@ Un espace temporaire pour partager textes, liens et fichiers pendant une formati
 - Chat commun en direct, modification de ses messages et suppression de ses publications ; modération par le formateur.
 - Fichiers de 50 Mo maximum, quota de 1 Go par session, téléchargements contrôlés et dépôts avec progression.
 - Suppression automatique des messages, participants et fichiers à l'échéance ; modification de l'échéance possible avant expiration.
-- Interface responsive. Partage d'écran avec LiveKit, sans micro, caméra ni enregistrement.
+- Interface responsive, textes lisibles, actions regroupées dans un menu « ⋯ », thèmes clair et sombre mémorisés par navigateur.
+- Partage d'écran avec LiveKit, sans micro, caméra ni enregistrement.
 
 ## Démarrer en local
 

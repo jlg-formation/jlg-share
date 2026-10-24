@@ -102,7 +102,27 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await other.getByLabel("Code d'accès").fill("bonjour");
   await other.getByRole("button", { name: "Rejoindre la session" }).click();
   await expect(other.getByRole("alert")).toContainText("déjà utilisé");
-  await guest.getByRole("button", { name: "Modifier", exact: true }).click();
+  const messageActions = guest.getByRole("button", {
+    name: "Actions du message de Alice",
+    exact: true,
+  });
+  await expect(
+    guest.getByRole("menuitem", { name: "Modifier", exact: true }),
+  ).toBeHidden();
+  await messageActions.focus();
+  await messageActions.press("ArrowDown");
+  await expect(
+    guest.getByRole("menuitem", { name: "Copier", exact: true }),
+  ).toBeFocused();
+  await guest.keyboard.press("ArrowDown");
+  await expect(
+    guest.getByRole("menuitem", { name: "Modifier", exact: true }),
+  ).toBeFocused();
+  await guest.keyboard.press("Escape");
+  await expect(guest.getByRole("menu")).toBeHidden();
+  await expect(messageActions).toBeFocused();
+  await messageActions.click();
+  await guest.getByRole("menuitem", { name: "Modifier", exact: true }).click();
   await guest.getByLabel("Modifier le message").fill("Message corrigé");
   await guest.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(
@@ -176,6 +196,53 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  expect(
+    await page
+      .locator(".message-text")
+      .first()
+      .evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
+  ).toBeGreaterThanOrEqual(17);
+  expect(
+    await page
+      .locator(".publication-menu-trigger")
+      .first()
+      .evaluate((element) => element.getBoundingClientRect().height),
+  ).toBeGreaterThanOrEqual(44);
+  await page
+    .getByRole("button", { name: "Passer au mode sombre", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page
+    .getByRole("button", { name: "Actions du message de Alice", exact: true })
+    .click();
+  await expect(
+    page.getByRole("menuitem", { name: "Copier", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("menuitem", { name: "Modifier", exact: true }),
+  ).toBeHidden();
+  await expect(
+    page.getByRole("menuitem", { name: "Supprimer", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/session-dark.png" });
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Passer au mode clair", exact: true })
+    .click();
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  await expect(page.getByLabel("Votre message")).toBeInViewport({ ratio: 1 });
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <= innerWidth + 1 &&
+        document.documentElement.scrollHeight <= innerHeight + 1,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty("font-size");
+  });
   await page.screenshot({
     path: "test-results/session-desktop.png",
     fullPage: true,
