@@ -313,12 +313,8 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                         <h3>{s.title}</h3>
                         <p>Suppression le {date(s.expiresAt)}</p>
                         <span className="small">
-                          {s.closed
-                            ? "Fermée"
-                            : s.protected
-                              ? "Accès avec code"
-                              : "Accès par lien"}{" "}
-                          · {bytes(s.usedBytes)}
+                          {s.protected ? "Accès avec code" : "Accès par lien"} ·{" "}
+                          {bytes(s.usedBytes)}
                         </span>
                       </div>
                       <Icon name="arrow" />
@@ -381,7 +377,6 @@ function Room({ id, me }: { id: string; me: Me }) {
       title: string;
       expiresAt: number;
       protected: boolean;
-      closed: boolean;
     } | null>(null),
     [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [error, setError] = useState(""),
@@ -651,12 +646,8 @@ function Room({ id, me }: { id: string; me: Me }) {
                     />
                   </>
                 )}
-                <button className="primary" disabled={busy || intro.closed}>
-                  {intro.closed
-                    ? "Session fermée"
-                    : busy
-                      ? "Connexion…"
-                      : "Rejoindre la session"}
+                <button className="primary" disabled={busy}>
+                  {busy ? "Connexion…" : "Rejoindre la session"}
                   <Icon name="arrow" />
                 </button>
                 <p className="hint">
@@ -751,12 +742,21 @@ function Room({ id, me }: { id: string; me: Me }) {
             </div>
             {profileError && <Notice>{profileError}</Notice>}
             <form
+              className="session-settings-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 setProfileBusy(true);
                 setProfileError("");
                 try {
-                  await api(base + "/me", "PATCH", { nickname: profileName });
+                  await api(admin ? base : base + "/me", "PATCH", {
+                    nickname: profileName,
+                    ...(admin
+                      ? {
+                          slug: addressDraft,
+                          expiresAt: new Date(deadline).getTime(),
+                        }
+                      : {}),
+                  });
                   await refresh();
                   setManage(false);
                 } catch (e) {
@@ -766,116 +766,94 @@ function Room({ id, me }: { id: string; me: Me }) {
                 }
               }}
             >
-              <label htmlFor="my-nickname">Mon nom dans la session</label>
-              <input
-                id="my-nickname"
-                required
-                maxLength={40}
-                autoComplete="nickname"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-              />
-              <div className="inline">
-                <button className="primary" disabled={profileBusy}>
-                  {profileBusy ? "Enregistrement…" : "Enregistrer mon nom"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => setManage(false)}
-                >
-                  Annuler
-                </button>
+              <div className="settings-fields">
+                <div className="settings-field">
+                  <label htmlFor="my-nickname">Mon nom dans la session</label>
+                  <input
+                    id="my-nickname"
+                    required
+                    maxLength={40}
+                    autoComplete="nickname"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                  />
+                </div>
+                {admin && (
+                  <>
+                    <div className="settings-field">
+                      <label htmlFor="new-address">Adresse de la session</label>
+                      <div className="address-field">
+                        <span>{location.origin}/</span>
+                        <input
+                          id="new-address"
+                          required
+                          maxLength={60}
+                          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                          value={addressDraft}
+                          onChange={(e) =>
+                            setAddressDraft(e.target.value.toLowerCase())
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="settings-field">
+                      <label htmlFor="new-deadline">
+                        Nouvelle date de suppression —{" "}
+                        {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      </label>
+                      <input
+                        id="new-deadline"
+                        type="datetime-local"
+                        required
+                        value={deadline}
+                        onChange={(e) => setDeadline(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-            </form>
-            {admin && (
-              <>
-                {error && <Notice>{error}</Notice>}
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    try {
-                      await api(base, "PATCH", {
-                        expiresAt: new Date(deadline).getTime(),
-                        slug: addressDraft,
-                      });
-                      await refresh();
-                      setManage(false);
-                    } catch (e) {
-                      handle(e);
-                    }
-                  }}
-                >
-                  <label htmlFor="new-address">Adresse de la session</label>
-                  <div className="address-field">
-                    <span>{location.origin}/</span>
-                    <input
-                      id="new-address"
-                      required
-                      maxLength={60}
-                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                      value={addressDraft}
-                      onChange={(e) =>
-                        setAddressDraft(e.target.value.toLowerCase())
-                      }
-                    />
-                  </div>
-                  <label htmlFor="new-deadline">
-                    Nouvelle date de suppression —{" "}
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
-                  </label>
-                  <div className="inline">
-                    <input
-                      id="new-deadline"
-                      type="datetime-local"
-                      required
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                    />
-                    <button className="primary">Enregistrer</button>
-                  </div>
-                </form>
-                <div className="inline">
+              {admin && (
+                <div className="settings-delete">
                   <button
-                    className="secondary"
-                    onClick={async () => {
-                      try {
-                        await api(base, "PATCH", { closed: !session.closed });
-                        await refresh();
-                      } catch (e) {
-                        handle(e);
-                      }
-                    }}
-                  >
-                    {session.closed
-                      ? "Rouvrir aux stagiaires"
-                      : "Fermer aux stagiaires"}
-                  </button>
-                  <button
+                    type="button"
                     className="danger"
+                    disabled={profileBusy}
                     onClick={async () => {
                       if (
-                        confirm(
+                        !confirm(
                           "Supprimer définitivement cette session, tous ses messages et fichiers ?",
                         )
                       )
-                        try {
-                          await api(base, "DELETE");
-                          location.assign("/");
-                        } catch (e) {
-                          handle(e);
-                        }
+                        return;
+                      try {
+                        await api(base, "DELETE");
+                        location.assign("/");
+                      } catch (e) {
+                        setProfileError((e as Error).message);
+                      }
                     }}
                   >
                     Supprimer maintenant
                   </button>
                 </div>
-              </>
-            )}
+              )}
+              <div className="settings-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={profileBusy}
+                  onClick={() => setManage(false)}
+                >
+                  Annuler
+                </button>
+                <button className="primary" disabled={profileBusy}>
+                  {profileBusy ? "Enregistrement…" : "Enregistrer"}
+                </button>
+              </div>
+            </form>
           </section>
         </SettingsDialog>
       )}
-      {session.closed && <Notice>La session est fermée aux stagiaires.</Notice>}
       {error && !manage && (
         <div className="inline error-row">
           <Notice>{error}</Notice>

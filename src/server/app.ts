@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { renameSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import { Store, AppError, fail, id, nickname, nameKey } from "./store";
+import { Store, AppError, fail, id, nickname } from "./store";
 import { FILE_LIMIT } from "../shared/types";
 import { suggestAddress } from "../shared/address";
 import type { MediaService } from "./media";
@@ -288,7 +288,6 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
         title: s.title,
         expiresAt: s.expires_at,
         protected: !!s.code_hash,
-        closed: !!s.closed,
       });
     if (action === "join" && req.method === "POST") {
       rate("join:" + remote, 30);
@@ -326,29 +325,17 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       store.raw(sessionId);
       const nextExpiry =
         input.expiresAt === undefined ? undefined : expiry(input.expiresAt);
-      if (input.closed !== undefined && typeof input.closed !== "boolean")
-        fail(400, "État invalide.");
       store.db.transaction(() => {
+        if (input.nickname !== undefined)
+          store.rename(sessionId, browserId, input.nickname);
         if (input.slug !== undefined) store.setAddress(sessionId, input.slug);
         if (nextExpiry !== undefined)
           store.db
             .query("UPDATE sessions SET expires_at=? WHERE id=?")
             .run(nextExpiry, sessionId);
-        if (input.closed !== undefined)
-          store.db
-            .query("UPDATE sessions SET closed=? WHERE id=?")
-            .run(input.closed ? 1 : 0, sessionId);
       })();
       schedule();
       notify(sessionId);
-      if (input.closed === true)
-        for (const ws of sockets)
-          if (
-            ws.data.sessionId === sessionId &&
-            !store.isAdmin(ws.data.browserId)
-          )
-            ws.close(1008, "Session fermée");
-      if (input.closed === true) await media?.end(sessionId);
       return json(store.session(sessionId));
     }
     if (!action && req.method === "DELETE") {
@@ -362,23 +349,7 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
     const actor = store.actor(sessionId, browserId);
     if (action === "me" && req.method === "PATCH") {
       const input = await body(req);
-      const name = nickname(input.nickname);
-      store.db.transaction(() => {
-        const current = store.actor(sessionId, browserId);
-        const taken = store.db
-          .query(
-            "SELECT id FROM participants WHERE session_id=? AND name_key=? AND id<>?",
-          )
-          .get(sessionId, nameKey(name), current.id);
-        if (taken)
-          fail(
-            409,
-            "Ce pseudo est déjà utilisé dans cette session. Choisissez-en un autre.",
-          );
-        store.db
-          .query("UPDATE participants SET nickname=?,name_key=? WHERE id=?")
-          .run(name, nameKey(name), current.id);
-      })();
+      store.rename(sessionId, browserId, input.nickname);
       notify(sessionId);
       return json(store.actor(sessionId, browserId));
     }

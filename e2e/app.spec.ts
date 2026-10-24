@@ -290,16 +290,12 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
     guest.getByRole("button", { name: "Supprimer maintenant", exact: true }),
   ).toBeHidden();
   await guest.getByLabel("Mon nom dans la session").fill("Jean-Louis");
-  await guest
-    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
-    .click();
+  await guest.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(guest.getByRole("dialog").getByRole("alert")).toContainText(
     "déjà utilisé",
   );
   await guest.getByLabel("Mon nom dans la session").fill("Alicia");
-  await guest
-    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
-    .click();
+  await guest.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(guest.getByRole("dialog")).toBeHidden();
   await expect(
     page.locator(".message-meta").getByText("Alicia", { exact: true }),
@@ -324,10 +320,24 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await page
     .getByRole("button", { name: "Gérer la session", exact: true })
     .click();
+  await expect(page.getByRole("dialog").locator("form")).toHaveCount(1);
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Enregistrer", exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByText("Session ouverte aux stagiaires", { exact: true }),
+  ).toBeHidden();
+  await page.getByLabel("Mon nom dans la session").fill("Alicia");
+  await page.getByLabel("Adresse de la session").fill("nouvelle-adresse");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "déjà utilisé",
+  );
+  await expect(page).toHaveURL(/\/excel$/);
   await page.getByLabel("Mon nom dans la session").fill("Jean-Louis corrigé");
-  await page
-    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(
     guest
@@ -335,6 +345,19 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
       .getByText("Jean-Louis corrigé", { exact: false })
       .first(),
   ).toBeVisible();
+  await expect(page).toHaveURL(/\/nouvelle-adresse$/);
+  await page
+    .getByRole("button", { name: "Gérer la session", exact: true })
+    .click();
+  await page.screenshot({ path: "test-results/session-settings.png" });
+  await page.getByLabel("Mon nom dans la session").fill("Modification annulée");
+  await page.getByRole("button", { name: "Annuler", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Gérer la session", exact: true })
+    .click();
+  await expect(page.getByLabel("Mon nom dans la session")).toHaveValue(
+    "Jean-Louis corrigé",
+  );
   await context.close();
   await otherContext.close();
 });

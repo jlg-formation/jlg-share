@@ -36,7 +36,6 @@ type RawSession = {
   id: string;
   title: string;
   expires_at: number;
-  closed: number;
   code_hash: string | null;
 };
 type ActorRow = {
@@ -204,7 +203,6 @@ export class Store {
       slug: this.address(s.id),
       title: s.title,
       expiresAt: s.expires_at,
-      closed: !!s.closed,
       protected: !!s.code_hash,
       usedBytes: usage.size,
     };
@@ -220,7 +218,7 @@ export class Store {
       fail(401, "Connectez-vous à votre espace administrateur.");
   }
   actor(sessionId: string, browserId: string): Participant {
-    const s = this.raw(sessionId);
+    this.raw(sessionId);
     let p = this.db
       .query("SELECT * FROM participants WHERE session_id=? AND browser_id=?")
       .get(sessionId, browserId) as ActorRow | null;
@@ -230,7 +228,6 @@ export class Store {
         .get(sessionId) as ActorRow | null;
     if (!p) fail(403, "Rejoignez la session avec votre pseudo.");
     if (p.admin) this.requireAdmin(browserId);
-    if (s.closed && !p.admin) fail(403, "Le formateur a fermé cette session.");
     return { id: p.id, nickname: p.nickname, admin: !!p.admin };
   }
   join(
@@ -240,8 +237,7 @@ export class Store {
     admin: boolean,
   ): Participant {
     return this.db.transaction(() => {
-      const s = this.raw(sessionId);
-      if (s.closed && !admin) fail(403, "Cette session est fermée.");
+      this.raw(sessionId);
       if (admin) this.requireAdmin(browserId);
       const existing = this.db
         .query("SELECT * FROM participants WHERE session_id=? AND browser_id=?")
@@ -268,6 +264,26 @@ export class Store {
         .query("INSERT INTO participants VALUES (?,?,?,?,?,?)")
         .run(participantId, sessionId, browserId, n, nameKey(n), admin ? 1 : 0);
       return { id: participantId, nickname: n, admin };
+    })();
+  }
+  rename(sessionId: string, browserId: string, value: unknown): Participant {
+    const name = nickname(value);
+    return this.db.transaction(() => {
+      const current = this.actor(sessionId, browserId);
+      const taken = this.db
+        .query(
+          "SELECT id FROM participants WHERE session_id=? AND name_key=? AND id<>?",
+        )
+        .get(sessionId, nameKey(name), current.id);
+      if (taken)
+        fail(
+          409,
+          "Ce pseudo est déjà utilisé dans cette session. Choisissez-en un autre.",
+        );
+      this.db
+        .query("UPDATE participants SET nickname=?,name_key=? WHERE id=?")
+        .run(name, nameKey(name), current.id);
+      return this.actor(sessionId, browserId);
     })();
   }
   publications(sessionId: string): Publication[] {

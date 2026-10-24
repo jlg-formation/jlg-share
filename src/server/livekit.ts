@@ -144,11 +144,12 @@ export class LiveKitMedia implements MediaService {
         /* Reconciliation retries; do not free the lock on a network failure. */
       }
     }
-    let closed = true;
+    let deleted = true;
     try {
-      closed = this.store.raw(sessionId).closed === 1;
+      this.store.raw(sessionId);
+      deleted = false;
     } catch {}
-    if (closed)
+    if (deleted)
       try {
         await this.client.deleteRoom(sessionId);
       } catch {}
@@ -165,8 +166,7 @@ export class LiveKitMedia implements MediaService {
       identity = event.participant?.identity;
     if (!room) return { ok: true };
     try {
-      const s = this.store.raw(room);
-      if (s.closed) throw new Error("closed");
+      this.store.raw(room);
     } catch {
       try {
         await this.client.deleteRoom(room);
@@ -201,12 +201,11 @@ export class LiveKitMedia implements MediaService {
     if (this.reconciling) return;
     this.reconciling = true;
     try {
-      // Also remove abandoned rooms, including viewers, after expiry or closure.
+      // Also remove abandoned rooms, including viewers, after expiry or deletion.
       const rooms = await this.client.listRooms();
       for (const room of rooms) {
         try {
-          if (this.store.raw(room.name).closed)
-            await this.client.deleteRoom(room.name);
+          this.store.raw(room.name);
         } catch {
           await this.client.deleteRoom(room.name);
         }

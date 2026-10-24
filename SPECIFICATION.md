@@ -1,6 +1,6 @@
 # JLG Share — Spécification initiale
 
-Version : 0.16 — 24 octobre 2026
+Version : 0.18 — 24 octobre 2026
 Statut : document de travail, fondé sur les échanges avec le formateur.
 
 Ce document distingue les décisions déjà retenues des propositions de conception. Les propositions et les questions ouvertes pourront évoluer avant ou pendant le développement.
@@ -59,12 +59,12 @@ Propositions :
 - Les stagiaires accèdent à la session sans créer de compte.
 - Chaque stagiaire renseigne obligatoirement un nom affiché non vide : prénom, initiales ou pseudonyme libre. Il ne s'agit pas d'une identité vérifiée. L'auteur est affiché sur chaque message, lien et fichier publié, y compris pour le formateur.
 - Deux participants ne peuvent pas avoir le même pseudonyme dans une même session, y compris celui du formateur. Cette unicité est contrôlée côté serveur, même lors d'arrivées simultanées. Proposition technique : comparer les noms après suppression des espaces de début et fin et sans distinguer majuscules et minuscules. Le pseudonyme courant reste réservé à son participant ; après un changement, son ancien nom redevient disponible.
-- Chaque participant, formateur compris, peut changer son nom dans la session à tout moment via le bouton commun « Gérer la session ». Le nouveau nom doit rester non vide et unique. Cette même fenêtre affiche les réglages supplémentaires réservés au formateur selon ses droits. Le nom est actualisé pour tous sur ses publications existantes et futures, y compris les fichiers, sans changer son identité ni ses droits ; il est conservé après rechargement.
+- Chaque participant, formateur compris, peut changer son nom dans la session à tout moment via le bouton commun « Gérer la session ». Le nouveau nom doit rester non vide et unique. Cette même fenêtre affiche les réglages supplémentaires réservés au formateur selon ses droits. Elle présente un formulaire unique avec les champs espacés et les boutons « Annuler » et « Enregistrer » regroupés en bas. Le nom, l’adresse et l’échéance sont enregistrés ensemble, sans modification partielle si un champ est refusé. Le nom est actualisé pour tous sur ses publications existantes et futures, y compris les fichiers, sans changer son identité ni ses droits ; il est conservé après rechargement.
 - Les droits de propriété des publications reposent sur une identité technique de participant attribuée par le serveur, jamais sur le seul pseudonyme. Dans le même navigateur, le participant retrouve son pseudo et ses droits après rechargement ou fermeture, tant que son justificatif local est conservé et que la session n'a pas expiré. Avec un autre navigateur ou appareil, ou après suppression de ce justificatif, il est un nouveau participant et doit choisir un pseudo disponible ; aucun transfert automatique des droits n'est prévu.
 - Le nom affiché du formateur est configurable et suivi de la mention « (admin) ». Cette mention est ajoutée par l'application à partir des droits vérifiés côté serveur ; un pseudo choisi par un stagiaire ne lui confère pas ce statut.
 - Le formateur dispose d'un accès d'administration distinct, protégé par un unique mot de passe administrateur. Aucun identifiant à saisir, inscription, compte stagiaire ou système de comptes multiples n'est requis. Ce mot de passe donne accès à la création et à la gestion des sessions ; il est distinct du code ou mot de passe facultatif de chaque session.
 - Les ressources déjà publiées restent visibles à un stagiaire qui rejoint la session plus tard.
-- Une session peut être fermée aux participants sans être immédiatement supprimée.
+- Une session reste accessible aux participants jusqu’à sa suppression manuelle ou à son échéance. Il n’y a pas de fermeture temporaire aux stagiaires.
 - Le formateur peut supprimer la session et ses ressources.
 
 À la création de chaque session, le formateur renseigne obligatoirement la date à laquelle toutes les informations de session seront effacées. Un calendrier et un sélecteur d'heure permettent de choisir une échéance précise. Le champ est prérempli à la date et l'heure courantes plus 24 heures, dans l'heure locale affichée ; le formateur peut modifier cette proposition avant création. Il s'agit d'une valeur par défaut et non d'une limite de conservation imposée. La date et l'heure sont validées comme champs de création ; le fuseau affiché par défaut proposé est Europe/Paris. Le formulaire indique clairement le fuseau et récapitule le moment de suppression avant création. Le serveur refuse une échéance absente, invalide ou déjà passée et conserve l'instant correspondant en UTC.
@@ -153,7 +153,7 @@ La lisibilité prime sur la densité : texte courant de 17 px à la taille stand
 ### Formateur
 
 1. S'authentifier dans l'administration.
-2. Créer une session en indiquant sa date et son heure de suppression, ou rouvrir une session existante non expirée.
+2. Créer une session en indiquant sa date et son heure de suppression, ou retrouver une session existante non expirée.
 3. Copier son lien d'accès et le communiquer aux stagiaires.
 4. Publier des textes, liens et fichiers au cours de la formation.
 5. Activer ponctuellement le partage d'écran.
@@ -224,7 +224,7 @@ Le déploiement de production ne doit dépendre d'aucun abonnement à LiveKit Cl
 
 La redistribution par un serveur auto-hébergé ne constitue pas à elle seule une garantie de chiffrement de bout en bout. Ce besoin éventuel reste à préciser.
 
-Un fichier téléchargé ou un écran visible peut être copié par un participant. La fermeture ou la suppression d'une session ne retire pas ces copies. La suppression vise les données contrôlées par JLG Share ; elle ne constitue pas un effacement forensique du support physique de l'hébergeur. Les sauvegardes et snapshots ne doivent pas conserver les contenus des sessions au-delà de l'échéance : vérifier et adapter les sauvegardes OVH, y compris celles incluses dans l'offre, avant mise en production. Aucune restauration ne doit réintroduire une session expirée.
+Un fichier téléchargé ou un écran visible peut être copié par un participant. La suppression d'une session ne retire pas ces copies. La suppression vise les données contrôlées par JLG Share ; elle ne constitue pas un effacement forensique du support physique de l'hébergeur. Les sauvegardes et snapshots ne doivent pas conserver les contenus des sessions au-delà de l'échéance : vérifier et adapter les sauvegardes OVH, y compris celles incluses dans l'offre, avant mise en production. Aucune restauration ne doit réintroduire une session expirée.
 
 ## 7. Hébergement, exploitation et capacité
 
@@ -255,7 +255,7 @@ Les offres VPS OVHcloud consultées annoncent du trafic illimité en France et u
 9. Un formateur partage son écran avec vingt navigateurs spectateurs simultanés, sans publication de micro, caméra ou audio d'onglet.
 10. Le partage est testé avec un contenu représentatif : texte, code, tableur et défilement. La lisibilité, la stabilité et le délai sont observés ; les seuils d'acceptation seront définis avant cet essai.
 11. La réception vidéo est essayée sur plusieurs réseaux, dont un cas nécessitant TURN, et pas seulement sur vingt onglets d'un même ordinateur.
-12. L'arrêt de la diffusion, la fermeture de session et la suppression des ressources produisent les effets attendus sur les connexions et les nouveaux accès.
+12. L'arrêt de la diffusion, la suppression de session et de ses ressources produisent les effets attendus sur les connexions et les nouveaux accès.
 13. L'application peut être installée sur un environnement vierge depuis le dépôt et la procédure de déploiement ; aucune restauration des données temporaires n'est requise.
 14. Les fichiers de plus de 50 Mo, quel que soit leur format, et les dépôts dépassant 1 Go par session sont refusés, y compris en cas de dépôts concurrents.
 15. La création impose une échéance future valide choisie via calendrier et heure, avec fuseau explicite. À cette échéance, les chats, fichiers et données de session sont supprimés, les connexions sont fermées et les URL directes sont inutilisables. La fermeture du navigateur et les reconnexions ne changent pas cette date. Tester les changements de fuseau et d'heure saisonnière, les accès et dépôts à l'échéance et le redémarrage serveur ; en cas de redémarrage après échéance, purger avant de servir les utilisateurs. Vérifier l'absence de contenu résiduel dans les journaux et stockages applicatifs.

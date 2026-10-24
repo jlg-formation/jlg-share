@@ -109,7 +109,14 @@ test("admin access, origin enforcement and code protection", async () => {
     ).status,
   ).toBe(403);
   expect(
-    (await request(`/api/sessions/${s}`, "PATCH", { closed: true }, c)).status,
+    (
+      await request(
+        `/api/sessions/${s}`,
+        "PATCH",
+        { expiresAt: clock + 7200000 },
+        c,
+      )
+    ).status,
   ).toBe(401);
 });
 test("unique nickname, identity recovery and ownership including admin moderation", async () => {
@@ -374,4 +381,88 @@ test("participants can rename only themselves without losing publications or per
       )
     ).status,
   ).toBe(409);
+});
+
+test("session settings save together and roll back entirely on conflicts", async () => {
+  const a = await admin();
+  const s = await session(a);
+  const other = (
+    await (
+      await request(
+        "/api/sessions",
+        "POST",
+        { title: "Autre formation", expiresAt: clock + 3600000 },
+        a,
+      )
+    ).json()
+  ).id;
+  const base = "/api/sessions/" + s;
+  const before = await (
+    await request(base + "/snapshot", "GET", undefined, a)
+  ).json();
+  const otherSession = await (
+    await request("/api/sessions/" + other, "GET", undefined, a)
+  ).json();
+  const guest = await client();
+  await request(base + "/join", "POST", { nickname: "Alice" }, guest);
+  const nextExpiry = clock + 7200000;
+  expect(
+    (
+      await request(
+        base,
+        "PATCH",
+        {
+          nickname: "Nouveau nom",
+          slug: otherSession.slug,
+          expiresAt: nextExpiry,
+        },
+        a,
+      )
+    ).status,
+  ).toBe(409);
+  let state = await (
+    await request(base + "/snapshot", "GET", undefined, a)
+  ).json();
+  expect(state.me.nickname).toBe(before.me.nickname);
+  expect(state.session.slug).toBe(before.session.slug);
+  expect(state.session.expiresAt).toBe(before.session.expiresAt);
+  expect(
+    (
+      await request(
+        base,
+        "PATCH",
+        { nickname: "alice", slug: "nouvelle-adresse", expiresAt: nextExpiry },
+        a,
+      )
+    ).status,
+  ).toBe(409);
+  state = await (await request(base + "/snapshot", "GET", undefined, a)).json();
+  expect(state.session.slug).toBe(before.session.slug);
+  expect(state.session.expiresAt).toBe(before.session.expiresAt);
+  expect(
+    (
+      await request(
+        base,
+        "PATCH",
+        {
+          nickname: "Nouveau nom",
+          slug: "nouvelle-adresse",
+          expiresAt: nextExpiry,
+        },
+        a,
+      )
+    ).status,
+  ).toBe(200);
+  state = await (await request(base + "/snapshot", "GET", undefined, a)).json();
+  expect(state.me.nickname).toBe("Nouveau nom");
+  expect(state.session.slug).toBe("nouvelle-adresse");
+  expect(state.session.expiresAt).toBe(nextExpiry);
+  expect(
+    (await request(base + "/snapshot", "GET", undefined, guest)).status,
+  ).toBe(200);
+  // Old databases may contain the removed closure flag; it no longer blocks access.
+  store.db.query("UPDATE sessions SET closed=1 WHERE id=?").run(s);
+  expect(
+    (await request(base + "/snapshot", "GET", undefined, guest)).status,
+  ).toBe(200);
 });

@@ -1435,3 +1435,37 @@ textarea::placeholder {
   color: var(--muted);
   opacity: 1;
 }
+
+.session-settings-form .settings-fields {
+  display: grid;
+  gap: 22px;
+  margin-top: 24px;
+}
+.session-settings-form .settings-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.session-settings-form .settings-field label,
+.session-settings-form .settings-field input {
+  margin: 0;
+}
+.session-settings-form .settings-delete {
+  margin-top: 28px;
+}
+.session-settings-form .settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 28px;
+}
+.session-settings-form .settings-actions button {
+  width: auto;
+  margin: 0;
+}
+.manage .session-settings-form {
+  margin-bottom: 0;
+}

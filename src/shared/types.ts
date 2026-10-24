@@ -3,7 +3,6 @@ export type Session = {
   id: string;
   title: string;
   expiresAt: number;
-  closed: boolean;
   protected: boolean;
   usedBytes: number;
 };
