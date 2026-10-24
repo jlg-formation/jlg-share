@@ -35,6 +35,28 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
     .click();
   await expect(page.getByLabel("Votre message")).toBeVisible();
   const url = page.url();
+  const snapshotPath =
+    new URL(url).pathname.replace("/s/", "/api/sessions/") + "/snapshot";
+  const beforeExtension = await (await page.request.get(snapshotPath)).json();
+  await page.getByRole("button", { name: "Gérer la session" }).click();
+  const deadline = page.getByLabel(/Nouvelle date de suppression/);
+  const extendedDate = await deadline.evaluate((element) => {
+    const d = new Date(
+      new Date((element as HTMLInputElement).value).getTime() + 86400000,
+    );
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  });
+  await deadline.fill(extendedDate);
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Réglages de la session" }),
+  ).not.toBeVisible();
+  const afterExtension = await (await page.request.get(snapshotPath)).json();
+  expect(afterExtension.session.expiresAt).toBeGreaterThan(
+    beforeExtension.session.expiresAt,
+  );
   const context = await browser.newContext({ timezoneId: "Europe/Paris" });
   const guest = await context.newPage();
   await guest.goto(url);

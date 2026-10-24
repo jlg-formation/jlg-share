@@ -257,7 +257,9 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                   <p className="hint">
                     Heure de votre appareil (
                     {Intl.DateTimeFormat().resolvedOptions().timeZone}). Chats
-                    et fichiers seront supprimés à cette échéance.
+                    et fichiers seront supprimés à cette échéance. Vous pourrez
+                    la modifier dans « Gérer la session » tant que la session
+                    reste accessible.
                   </p>
                   <label htmlFor="code">
                     Code d'accès <span className="muted">· facultatif</span>
