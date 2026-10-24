@@ -276,6 +276,65 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
     path: "test-results/session-mobile.png",
     fullPage: true,
   });
+  await expect(
+    guest.getByRole("button", { name: "Gérer la session", exact: true }),
+  ).toBeInViewport({ ratio: 1 });
+  await guest
+    .getByRole("button", { name: "Gérer la session", exact: true })
+    .click();
+  await expect(guest.getByLabel("Mon nom dans la session")).toHaveValue(
+    "Alice",
+  );
+  await expect(guest.getByLabel("Adresse de la session")).toBeHidden();
+  await expect(
+    guest.getByRole("button", { name: "Supprimer maintenant", exact: true }),
+  ).toBeHidden();
+  await guest.getByLabel("Mon nom dans la session").fill("Jean-Louis");
+  await guest
+    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
+    .click();
+  await expect(guest.getByRole("dialog").getByRole("alert")).toContainText(
+    "déjà utilisé",
+  );
+  await guest.getByLabel("Mon nom dans la session").fill("Alicia");
+  await guest
+    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
+    .click();
+  await expect(guest.getByRole("dialog")).toBeHidden();
+  await expect(
+    page.locator(".message-meta").getByText("Alicia", { exact: true }),
+  ).toHaveCount(2);
+  await expect(page.locator(".file-list")).toContainText("Alicia");
+  await guest.reload();
+  await expect(guest.getByLabel("Votre message")).toBeVisible();
+  await guest
+    .getByRole("button", { name: "Gérer la session", exact: true })
+    .click();
+  await expect(guest.getByLabel("Mon nom dans la session")).toHaveValue(
+    "Alicia",
+  );
+  await guest.getByRole("button", { name: "Annuler", exact: true }).click();
+  await guest
+    .getByRole("button", { name: "Actions du message de Alicia", exact: true })
+    .click();
+  await expect(
+    guest.getByRole("menuitem", { name: "Modifier", exact: true }),
+  ).toBeVisible();
+  await guest.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "Gérer la session", exact: true })
+    .click();
+  await page.getByLabel("Mon nom dans la session").fill("Jean-Louis corrigé");
+  await page
+    .getByRole("button", { name: "Enregistrer mon nom", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(
+    guest
+      .locator(".message-meta")
+      .getByText("Jean-Louis corrigé", { exact: false })
+      .first(),
+  ).toBeVisible();
   await context.close();
   await otherContext.close();
 });

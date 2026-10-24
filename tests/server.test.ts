@@ -280,3 +280,98 @@ test("persistence and startup cleanup", async () => {
   ).json();
   expect(data.publications[0].text).toBe("persistant");
 });
+
+test("participants can rename only themselves without losing publications or permissions", async () => {
+  const a = await admin();
+  const s = await session(a);
+  const base = "/api/sessions/" + s;
+  const alice = await client(),
+    bob = await client(),
+    outsider = await client();
+  await request(base + "/join", "POST", { nickname: "Alice" }, alice);
+  await request(base + "/join", "POST", { nickname: "Bob" }, bob);
+  const original = await (
+    await request(base + "/snapshot", "GET", undefined, alice)
+  ).json();
+  await request(base + "/messages", "POST", { text: "Bonjour" }, alice);
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "Intrus" }, outsider))
+      .status,
+  ).toBe(403);
+  for (const name of ["", " ", "x".repeat(41), "Alice (admin)"]) {
+    expect(
+      (await request(base + "/me", "PATCH", { nickname: name }, alice)).status,
+    ).toBe(400);
+  }
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "  bOb  " }, alice))
+      .status,
+  ).toBe(409);
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "ＡＬＩＣＥ" }, bob))
+      .status,
+  ).toBe(409);
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "  ALICE  " }, alice))
+      .status,
+  ).toBe(200);
+  expect(
+    (
+      await request(
+        base + "/me",
+        "PATCH",
+        {
+          nickname: "Alicia",
+          id: original.participants.find((p: any) => p.nickname === "Bob").id,
+        },
+        alice,
+      )
+    ).status,
+  ).toBe(200);
+  const updated = await (
+    await request(base + "/snapshot", "GET", undefined, alice)
+  ).json();
+  expect(updated.me.id).toBe(original.me.id);
+  expect(updated.me.nickname).toBe("Alicia");
+  expect(updated.publications[0].nickname).toBe("Alicia");
+  expect(updated.participants.some((p: any) => p.nickname === "Bob")).toBe(
+    true,
+  );
+  expect(
+    (
+      await request(
+        base + "/messages/" + updated.publications[0].id,
+        "PATCH",
+        { text: "Corrigé" },
+        alice,
+      )
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await request(
+        base + "/messages/" + updated.publications[0].id,
+        "DELETE",
+        undefined,
+        bob,
+      )
+    ).status,
+  ).toBe(403);
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "Alice" }, bob)).status,
+  ).toBe(200);
+  expect(
+    (await request(base + "/me", "PATCH", { nickname: "Formateur corrigé" }, a))
+      .status,
+  ).toBe(200);
+  expect(
+    (
+      await request(
+        base + "/me",
+        "PATCH",
+        { nickname: "FORMATEUR CORRIGÉ" },
+        alice,
+      )
+    ).status,
+  ).toBe(409);
+});

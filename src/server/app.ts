@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { renameSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import type { Server, ServerWebSocket } from "bun";
-import { Store, AppError, fail, id, nickname } from "./store";
+import { Store, AppError, fail, id, nickname, nameKey } from "./store";
 import { FILE_LIMIT } from "../shared/types";
 import { suggestAddress } from "../shared/address";
 import type { MediaService } from "./media";
@@ -360,6 +360,28 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       return json({ ok: true });
     }
     const actor = store.actor(sessionId, browserId);
+    if (action === "me" && req.method === "PATCH") {
+      const input = await body(req);
+      const name = nickname(input.nickname);
+      store.db.transaction(() => {
+        const current = store.actor(sessionId, browserId);
+        const taken = store.db
+          .query(
+            "SELECT id FROM participants WHERE session_id=? AND name_key=? AND id<>?",
+          )
+          .get(sessionId, nameKey(name), current.id);
+        if (taken)
+          fail(
+            409,
+            "Ce pseudo est déjà utilisé dans cette session. Choisissez-en un autre.",
+          );
+        store.db
+          .query("UPDATE participants SET nickname=?,name_key=? WHERE id=?")
+          .run(name, nameKey(name), current.id);
+      })();
+      notify(sessionId);
+      return json(store.actor(sessionId, browserId));
+    }
     if (action === "snapshot" && req.method === "GET") {
       const participants = store.db
         .query(

@@ -398,6 +398,9 @@ function Room({ id, me }: { id: string; me: Me }) {
     } | null>(null),
     [connected, setConnected] = useState(false),
     [manage, setManage] = useState(false),
+    [profileName, setProfileName] = useState(""),
+    [profileError, setProfileError] = useState(""),
+    [profileBusy, setProfileBusy] = useState(false),
     [deadline, setDeadline] = useState(""),
     [addressDraft, setAddressDraft] = useState(""),
     [toast, setToast] = useState(""),
@@ -709,19 +712,19 @@ function Room({ id, me }: { id: string; me: Me }) {
             <Icon name="copy" />
             Copier le lien
           </button>
-          {admin && (
-            <button
-              className="secondary"
-              onClick={() => {
-                setDeadline(localDate(session.expiresAt));
-                setAddressDraft(session.slug);
-                setError("");
-                setManage(true);
-              }}
-            >
-              Gérer la session
-            </button>
-          )}
+          <button
+            className="secondary"
+            onClick={() => {
+              setProfileName(snapshot.me.nickname);
+              setProfileError("");
+              setDeadline(localDate(session.expiresAt));
+              setAddressDraft(session.slug);
+              setError("");
+              setManage(true);
+            }}
+          >
+            Gérer la session
+          </button>
         </div>
       </header>
       <div className="expiry-bar">
@@ -733,7 +736,7 @@ function Room({ id, me }: { id: string; me: Me }) {
           {participants.length} participant{participants.length > 1 ? "s" : ""}
         </span>
       </div>
-      {manage && admin && (
+      {manage && (
         <SettingsDialog onClose={() => setManage(false)}>
           <section className="manage card">
             <div className="manage-header">
@@ -746,86 +749,129 @@ function Room({ id, me }: { id: string; me: Me }) {
                 <Icon name="close" />
               </button>
             </div>
-            {error && <Notice>{error}</Notice>}
+            {profileError && <Notice>{profileError}</Notice>}
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
+                setProfileBusy(true);
+                setProfileError("");
                 try {
-                  await api(base, "PATCH", {
-                    expiresAt: new Date(deadline).getTime(),
-                    slug: addressDraft,
-                  });
+                  await api(base + "/me", "PATCH", { nickname: profileName });
                   await refresh();
                   setManage(false);
                 } catch (e) {
-                  handle(e);
+                  setProfileError((e as Error).message);
+                } finally {
+                  setProfileBusy(false);
                 }
               }}
             >
-              <label htmlFor="new-address">Adresse de la session</label>
-              <div className="address-field">
-                <span>{location.origin}/</span>
-                <input
-                  id="new-address"
-                  required
-                  maxLength={60}
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                  value={addressDraft}
-                  onChange={(e) =>
-                    setAddressDraft(e.target.value.toLowerCase())
-                  }
-                />
-              </div>
-              <label htmlFor="new-deadline">
-                Nouvelle date de suppression —{" "}
-                {Intl.DateTimeFormat().resolvedOptions().timeZone}
-              </label>
+              <label htmlFor="my-nickname">Mon nom dans la session</label>
+              <input
+                id="my-nickname"
+                required
+                maxLength={40}
+                autoComplete="nickname"
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+              />
               <div className="inline">
-                <input
-                  id="new-deadline"
-                  type="datetime-local"
-                  required
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                />
-                <button className="primary">Enregistrer</button>
+                <button className="primary" disabled={profileBusy}>
+                  {profileBusy ? "Enregistrement…" : "Enregistrer mon nom"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setManage(false)}
+                >
+                  Annuler
+                </button>
               </div>
             </form>
-            <div className="inline">
-              <button
-                className="secondary"
-                onClick={async () => {
-                  try {
-                    await api(base, "PATCH", { closed: !session.closed });
-                    await refresh();
-                  } catch (e) {
-                    handle(e);
-                  }
-                }}
-              >
-                {session.closed
-                  ? "Rouvrir aux stagiaires"
-                  : "Fermer aux stagiaires"}
-              </button>
-              <button
-                className="danger"
-                onClick={async () => {
-                  if (
-                    confirm(
-                      "Supprimer définitivement cette session, tous ses messages et fichiers ?",
-                    )
-                  )
+            {admin && (
+              <>
+                {error && <Notice>{error}</Notice>}
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
                     try {
-                      await api(base, "DELETE");
-                      location.assign("/");
+                      await api(base, "PATCH", {
+                        expiresAt: new Date(deadline).getTime(),
+                        slug: addressDraft,
+                      });
+                      await refresh();
+                      setManage(false);
                     } catch (e) {
                       handle(e);
                     }
-                }}
-              >
-                Supprimer maintenant
-              </button>
-            </div>
+                  }}
+                >
+                  <label htmlFor="new-address">Adresse de la session</label>
+                  <div className="address-field">
+                    <span>{location.origin}/</span>
+                    <input
+                      id="new-address"
+                      required
+                      maxLength={60}
+                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                      value={addressDraft}
+                      onChange={(e) =>
+                        setAddressDraft(e.target.value.toLowerCase())
+                      }
+                    />
+                  </div>
+                  <label htmlFor="new-deadline">
+                    Nouvelle date de suppression —{" "}
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </label>
+                  <div className="inline">
+                    <input
+                      id="new-deadline"
+                      type="datetime-local"
+                      required
+                      value={deadline}
+                      onChange={(e) => setDeadline(e.target.value)}
+                    />
+                    <button className="primary">Enregistrer</button>
+                  </div>
+                </form>
+                <div className="inline">
+                  <button
+                    className="secondary"
+                    onClick={async () => {
+                      try {
+                        await api(base, "PATCH", { closed: !session.closed });
+                        await refresh();
+                      } catch (e) {
+                        handle(e);
+                      }
+                    }}
+                  >
+                    {session.closed
+                      ? "Rouvrir aux stagiaires"
+                      : "Fermer aux stagiaires"}
+                  </button>
+                  <button
+                    className="danger"
+                    onClick={async () => {
+                      if (
+                        confirm(
+                          "Supprimer définitivement cette session, tous ses messages et fichiers ?",
+                        )
+                      )
+                        try {
+                          await api(base, "DELETE");
+                          location.assign("/");
+                        } catch (e) {
+                          handle(e);
+                        }
+                    }}
+                  >
+                    Supprimer maintenant
+                  </button>
+                </div>
+              </>
+            )}
           </section>
         </SettingsDialog>
       )}
