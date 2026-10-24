@@ -542,7 +542,31 @@ La résolution est validée sur les serveurs interrogés, sans garantir l'état 
 
 Référence : [éditer une zone DNS OVHcloud](https://docs.ovhcloud.com/fr/guides/web-cloud/domains/dns-zone-edit).
 
-## 16. Où en sommes-nous ?
+## 16. Configuration privée et préparation du premier déploiement
+
+Le propriétaire a autorisé la réutilisation en production du mot de passe administrateur de son installation locale et a indiqué une adresse de contact pour les certificats HTTPS. Seul le hachage Argon2 local a été transféré, sans afficher ni demander le mot de passe. L'adresse de contact reste dans la configuration privée du VPS et n'est pas reproduite ici.
+
+L'agent a préparé puis exécuté le workflow [Initialiser la configuration du VPS](../.github/workflows/configure-vps.yml). Il a transféré temporairement le hachage et l'adresse via deux secrets GitHub `INITIAL_ADMIN_PASSWORD_HASH` et `INITIAL_ACME_EMAIL`, puis exécuté [deploy/configure.sh](../deploy/configure.sh) sur le VPS.
+
+L'[exécution 40107849537](https://github.com/jlg-formation/jlg-share/actions/runs/40107849537) a réussi : création de `/opt/jlg-share/.env` avec les droits 600, sans écrasement d'un fichier existant, et génération des clés LiveKit directement sur le VPS. Les deux secrets temporaires ont ensuite été supprimés de GitHub. La vérification des noms des secrets confirme qu'il ne reste que les quatre secrets SSH nécessaires aux déploiements suivants.
+
+L'environnement GitHub `production` a été limité à la branche `main`. Les clés temporaires utilisées sur les machines GitHub sont écrites dans des répertoires privés, puis nettoyées à la fin des étapes.
+
+Avant la livraison, l'agent a corrigé le Dockerfile pour inclure `public/` lors de la construction. Il a ajouté un test de l'image exécutée avec comparaison des octets de `theme.js` et `favicon.png`, ainsi que des tests de configuration non écrasée et de retour arrière avec des services simulés. L'[exécution CI 40107758829](https://github.com/jlg-formation/jlg-share/actions/runs/40107758829) a validé ces contrôles, les tests Bun, les deux modes des parcours Chromium, la construction Docker et Compose sous Linux.
+
+Le workflow [Déployer sur le VPS](../.github/workflows/deploy.yml) attend maintenant les vérifications complètes et Gitleaks avant d'accéder à l'environnement de production. Il livre le commit exact, vérifie HTTPS sur l'application et LiveKit, ainsi que les fichiers publics. [deploy/release.sh](../deploy/release.sh) tente un retour à la version précédente en cas d'échec après démarrage, si une telle version existe.
+
+La [première exécution de déploiement 40107893908](https://github.com/jlg-formation/jlg-share/actions/runs/40107893908), déclenchée manuellement par l'agent, a réussi pour le commit `2748de8`. Les vérifications complètes et Gitleaks ont réussi, puis l'archive a été transférée, les services démarrés et les contrôles HTTPS validés.
+
+Le site est accessible à [share.jlg-consulting.com](https://share.jlg-consulting.com), avec le mot de passe administrateur local réutilisé via son hachage. Le point d'accès LiveKit est [media.jlg-consulting.com](https://media.jlg-consulting.com).
+
+Les contrôles de livraison ont vérifié la santé applicative, les octets du thème et du favicon et la réponse HTTPS de LiveKit. GitHub a également validé le point de santé depuis sa machine. Un contrôle HTTPS supplémentaire depuis le poste de l'agent, en ciblant l'IP du VPS tout en vérifiant les certificats pour les noms de domaine, a confirmé `{"ok":true}` pour l'application et `OK` pour LiveKit. Le résolveur public `1.1.1.1` confirme les deux enregistrements A ; un essai utilisant le résolveur local de Bun a encore rencontré une réponse négative.
+
+Le déclenchement à chaque push sur `main` est ajouté après cette première livraison. Il réutilise les contrôles CI et Gitleaks, puis déploie uniquement si les deux réussissent. Les pull requests exécutent ces contrôles sans déploiement. Le résultat du premier déclenchement automatique sera consigné après exécution.
+
+La connexion administrateur avec le mot de passe personnel, un parcours complet en production, la transmission réelle d'écran, TURN et vingt spectateurs restent des validations distinctes. Le test du point d'accès LiveKit ne valide pas un flux vidéo.
+
+## 17. Où en sommes-nous ?
 
 **Confirmé :** le VPS est disponible, le mot de passe initial a été remplacé, les ressources ont été vérifiées et la reconnexion après redémarrage a réussi. Le propriétaire a également confirmé que les empreintes SSH vérifiées depuis la console KVM OVH et sa connexion personnelle depuis CMD sont identiques. Le serveur indique qu'aucune mise à jour n'est immédiatement applicable.
 
@@ -560,8 +584,12 @@ Référence : [éditer une zone DNS OVHcloud](https://docs.ovhcloud.com/fr/guide
 
 **DNS validés :** le propriétaire a enregistré `share` et `media` dans OVH ; les deux noms pointent vers `57.129.186.119`, vérification effectuée auprès d'OVH et de `1.1.1.1`.
 
-**Prochaine étape :** préparer les paramètres applicatifs de production et le premier déploiement.
+**Configuration privée créée :** le hachage administrateur et l'adresse de contact ont été transférés ; les clés LiveKit ont été générées sur le VPS. Les secrets temporaires ont été supprimés de GitHub.
 
-**Encore à réaliser :** la configuration des secrets applicatifs et des noms de domaine dans la configuration du VPS, le premier déploiement et ses essais, ainsi que la vérification des mises à jour de sécurité automatiques. Aucun déploiement de JLG Share sur le VPS ni activation du déploiement continu n'a été confirmé à ce stade.
+**Premier déploiement validé :** l'application et le point d'accès LiveKit répondent en HTTPS ; les contrôles de livraison ont réussi.
+
+**Prochaine étape :** vérifier une mise à jour déclenchée automatiquement par un push sur `main`.
+
+**Limites restantes :** validation du premier déclenchement automatique, parcours utilisateur complet en production, essais LiveKit et TURN sur les réseaux de formation, capacité vidéo de vingt spectateurs, vérification des mises à jour de sécurité automatiques et des sauvegardes OVH au regard de l'expiration des contenus.
 
 Le [guide de déploiement](DEPLOIEMENT.md) décrit l'architecture et les étapes prévues pour la suite. La clé personnelle d'administration et la future clé GitHub de déploiement doivent rester distinctes. Aucun mot de passe, aucune phrase secrète et aucune clé privée ne doivent être ajoutés à cette documentation.

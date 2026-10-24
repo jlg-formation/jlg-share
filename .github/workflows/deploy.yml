@@ -1,5 +1,7 @@
 name: Déployer sur le VPS
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

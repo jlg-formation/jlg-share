@@ -2,9 +2,9 @@
 
 ## État
 
-Configuration préparée pour un VPS Linux unique. L'installation réelle, les ports, les certificats et la diffusion WebRTC doivent être validés sur ce VPS. Docker n'était pas disponible sur le poste de développement lors de la première implémentation.
+Le premier déploiement sur le VPS Linux dédié a réussi le 24 octobre 2026 : [exécution GitHub Actions](https://github.com/jlg-formation/jlg-share/actions/runs/40107893908). L'application et le point d'accès LiveKit répondent en HTTPS. Les essais de transmission WebRTC, TURN et de charge vidéo restent à réaliser sur les réseaux de formation. Le [document pas à pas](PREMIERS-PAS-VPS.md) détaille les opérations effectuées et leurs résultats.
 
-La [première exécution GitHub Actions](https://github.com/jlg-formation/jlg-share/actions/runs/40098794465) a depuis validé la construction Docker et `docker compose config --quiet` sous Linux avec des valeurs fictives, ainsi que les tests et parcours Chromium. Cette vérification ne constitue pas un déploiement sur le VPS ni un essai des flux LiveKit.
+La [première exécution GitHub Actions](https://github.com/jlg-formation/jlg-share/actions/runs/40098794465) avait validé la construction Docker et `docker compose config --quiet` sous Linux avec des valeurs fictives, ainsi que les tests et parcours Chromium. Cette vérification CI, distincte du déploiement désormais effectué, ne constitue pas un essai des flux LiveKit.
 
 ## Préparer le VPS une fois
 
@@ -34,7 +34,7 @@ Les volumes nommés `jlg-share_app_data`, `jlg-share_caddy_data` et `jlg-share_c
 
 ## Déployer depuis GitHub Actions
 
-Le workflow `Vérifications` contrôle le code à chaque push sur `main` et à chaque pull request. Il est aussi réutilisable. Le workflow `Déployer sur le VPS`, encore déclenché manuellement depuis `main` pendant la première installation, attend la réussite des vérifications complètes et de Gitleaks avant d'accéder aux secrets de production. Il transfère la version Git précise, construit l'image sur le VPS et lance les services. L'activation du déclenchement automatique interviendra après validation de cette première installation.
+Le workflow `Déployer sur le VPS` se déclenche à chaque push sur `main`, ou manuellement depuis cette branche. Il attend la réussite des workflows réutilisables `Vérifications` et `Recherche de secrets` avant d'accéder aux secrets de production. Il transfère la version Git précise, construit l'image sur le VPS et lance les services. Chaque pull request lance également les vérifications et la recherche de secrets, sans accès à la production. L'environnement `production` n'autorise que la branche `main`.
 
 La CI teste aussi l'image Docker exécutée : santé HTTP, octets du favicon et du script de thème. Des tests avec des services simulés vérifient la préservation d'une configuration existante et le retour arrière lors d'un échec de démarrage ou de contrôle HTTPS. Ils ne remplacent pas les essais sur le VPS réel.
 
