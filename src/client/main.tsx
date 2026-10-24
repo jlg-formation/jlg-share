@@ -60,7 +60,13 @@ function Icon({ name }: { name: string }) {
 function Brand() {
   return (
     <a className="brand" href="/">
-      <span className="brand-icon">j.</span>
+      <img
+        className="brand-icon"
+        src="/portrait.svg"
+        alt=""
+        width="40"
+        height="40"
+      />
       <span>
         JLG <strong>Share</strong>
       </span>

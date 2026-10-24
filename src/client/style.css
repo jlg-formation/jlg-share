@@ -205,18 +205,12 @@ input[type="datetime-local"] {
   font-weight: 700;
 }
 .brand-icon {
-  display: grid;
-  place-items: center;
-  background: var(--green);
-  color: var(--accent);
-  border-radius: 10px;
-  width: 37px;
-  height: 37px;
-  font-weight: 750;
-  font-size: 1.75rem;
-  padding-bottom: 5px;
-  letter-spacing: -3px;
-  padding-right: 3px;
+  display: block;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: contain;
 }
 .top-caption {
   color: var(--muted);
@@ -440,10 +434,8 @@ body:has(.room-layout) {
   font-size: 1.125rem;
 }
 .room-layout .brand-icon {
-  width: 30px;
-  height: 30px;
-  font-size: 1.5rem;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
 }
 .room-title {
   display: flex;
@@ -1261,9 +1253,6 @@ body:has(.room-layout) {
   float: right;
 }
 
-.brand-icon {
-  color: var(--button-text);
-}
 .message-text {
   color: var(--text);
 }
