@@ -562,7 +562,9 @@ Le site est accessible à [share.jlg-consulting.com](https://share.jlg-consultin
 
 Les contrôles de livraison ont vérifié la santé applicative, les octets du thème et du favicon et la réponse HTTPS de LiveKit. GitHub a également validé le point de santé depuis sa machine. Un contrôle HTTPS supplémentaire depuis le poste de l'agent, en ciblant l'IP du VPS tout en vérifiant les certificats pour les noms de domaine, a confirmé `{"ok":true}` pour l'application et `OK` pour LiveKit. Le résolveur public `1.1.1.1` confirme les deux enregistrements A ; un essai utilisant le résolveur local de Bun a encore rencontré une réponse négative.
 
-Le déclenchement à chaque push sur `main` est ajouté après cette première livraison. Il réutilise les contrôles CI et Gitleaks, puis déploie uniquement si les deux réussissent. Les pull requests exécutent ces contrôles sans déploiement. Le résultat du premier déclenchement automatique sera consigné après exécution.
+Le déclenchement à chaque push sur `main` est activé après cette première livraison. Il réutilise les contrôles CI et Gitleaks, puis déploie uniquement si les deux réussissent. Les pull requests exécutent ces contrôles sans déploiement. La [première mise à jour automatique 40108251303](https://github.com/jlg-formation/jlg-share/actions/runs/40108251303), déclenchée par le push du commit `4b7a16f`, a réussi : recherche de secrets, vérifications complètes, mise à jour du VPS et santé HTTPS sont validées.
+
+Un contrôle supplémentaire depuis le poste de l'agent a confirmé la redirection HTTP vers HTTPS avec le statut 308 et les octets identiques du thème et du favicon. Les tentatives de connexion aux ports internes 3000 et 7880 n'ont pas abouti depuis ce poste ; cela ne constitue pas un audit réseau complet.
 
 La connexion administrateur avec le mot de passe personnel, un parcours complet en production, la transmission réelle d'écran, TURN et vingt spectateurs restent des validations distinctes. Le test du point d'accès LiveKit ne valide pas un flux vidéo.
 
@@ -588,8 +590,10 @@ La connexion administrateur avec le mot de passe personnel, un parcours complet 
 
 **Premier déploiement validé :** l'application et le point d'accès LiveKit répondent en HTTPS ; les contrôles de livraison ont réussi.
 
-**Prochaine étape :** vérifier une mise à jour déclenchée automatiquement par un push sur `main`.
+**Déploiement continu validé :** un push sur `main` a déclenché automatiquement les contrôles et une mise à jour réussie du VPS. Aucun lancement manuel n'est nécessaire pour les livraisons suivantes.
 
-**Limites restantes :** validation du premier déclenchement automatique, parcours utilisateur complet en production, essais LiveKit et TURN sur les réseaux de formation, capacité vidéo de vingt spectateurs, vérification des mises à jour de sécurité automatiques et des sauvegardes OVH au regard de l'expiration des contenus.
+**Prochaine étape d'utilisation :** le propriétaire peut se connecter à l'application avec son mot de passe administrateur local et réaliser un premier parcours de formation.
+
+**Limites restantes :** parcours utilisateur complet en production, essais LiveKit et TURN sur les réseaux de formation, capacité vidéo de vingt spectateurs, vérification des mises à jour de sécurité automatiques et des sauvegardes OVH au regard de l'expiration des contenus. Les tests de retour arrière ont utilisé des services simulés ; aucun échec volontaire n'a été provoqué sur le VPS de production.
 
 Le [guide de déploiement](DEPLOIEMENT.md) décrit l'architecture et les étapes prévues pour la suite. La clé personnelle d'administration et la future clé GitHub de déploiement doivent rester distinctes. Aucun mot de passe, aucune phrase secrète et aucune clé privée ne doivent être ajoutés à cette documentation.

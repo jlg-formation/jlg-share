@@ -2,6 +2,8 @@
 
 Un espace temporaire pour partager textes, liens et fichiers pendant une formation, avec un partage d'écran optionnel. Application auto-hébergée destinée à `share.jlg-consulting.com`.
 
+L'instance est déployée à [share.jlg-consulting.com](https://share.jlg-consulting.com). Le [premier déploiement continu](https://github.com/jlg-formation/jlg-share/actions/runs/40108251303) a réussi ; le [document pas à pas du VPS](docs/PREMIERS-PAS-VPS.md) décrit l'installation et les validations réalisées.
+
 ## Première version
 
 - Accès formateur par un mot de passe administrateur ; nom affiché configurable avec « (admin) ».
