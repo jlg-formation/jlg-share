@@ -1192,3 +1192,12 @@ body:has(.room-layout) {
   padding-left: 2px;
   box-shadow: none;
 }
+
+.room-actions .copy-session-link {
+  display: none;
+}
+@media (max-width: 720px) {
+  .room-actions .copy-session-link {
+    display: inline-flex;
+  }
+}

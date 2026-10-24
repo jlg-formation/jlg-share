@@ -147,9 +147,13 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
           window.scrollY === 0,
       ),
     ).toBe(true);
-    await expect(
-      page.getByRole("button", { name: "Copier le lien", exact: true }),
-    ).toBeInViewport({ ratio: 1 });
+    const copyLink = page.getByRole("button", {
+      name: "Copier le lien",
+      exact: true,
+    });
+    if (viewport.width <= 720)
+      await expect(copyLink).toBeInViewport({ ratio: 1 });
+    else await expect(copyLink).toBeHidden();
     await expect(
       page.getByRole("button", { name: "Gérer la session", exact: true }),
     ).toBeInViewport({ ratio: 1 });

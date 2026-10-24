@@ -1,6 +1,6 @@
 # JLG Share — Spécification initiale
 
-Version : 0.12 — 24 octobre 2026
+Version : 0.13 — 24 octobre 2026
 Statut : document de travail, fondé sur les échanges avec le formateur.
 
 Ce document distingue les décisions déjà retenues des propositions de conception. Les propositions et les questions ouvertes pourront évoluer avant ou pendant le développement.
@@ -139,7 +139,7 @@ La priorité est la lisibilité des textes, du code et des tableaux. La fréquen
 
 ### 3.7. Ergonomie
 
-Interface minimaliste, avec des libellés courts et sans slogans ni texte décoratif. Le titre de la formation apparaît une seule fois. Dans une session, un en-tête compact conserve les actions « Copier le lien » et « Gérer la session » visibles. La session occupe la hauteur disponible sans défilement global : seuls les messages, listes de fichiers et panneaux longs défilent à l'intérieur de leur zone. Sur mobile, des onglets donnent accès aux échanges ou aux fichiers et à l'écran. Les réglages s'ouvrent dans une fenêtre dédiée plutôt que de déplacer le chat.
+Interface minimaliste, avec des libellés courts et sans slogans ni texte décoratif. Le titre de la formation apparaît une seule fois. Dans une session, un en-tête compact conserve l’action « Gérer la session » visible pour le formateur. « Copier le lien » est proposé uniquement sur mobile ; sur ordinateur, l’adresse se copie depuis la barre du navigateur. La session occupe la hauteur disponible sans défilement global : seuls les messages, listes de fichiers et panneaux longs défilent à l'intérieur de leur zone. Sur mobile, des onglets donnent accès aux échanges ou aux fichiers et à l'écran. Les réglages s'ouvrent dans une fenêtre dédiée plutôt que de déplacer le chat.
 
 ## 4. Parcours proposés
 

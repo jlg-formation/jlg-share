@@ -692,7 +692,7 @@ function Room({ id, me }: { id: string; me: Me }) {
         </span>
         <div className="room-actions">
           <button
-            className="secondary"
+            className="secondary copy-session-link"
             onClick={() => copy(location.origin + "/" + session.slug)}
           >
             <Icon name="copy" />
