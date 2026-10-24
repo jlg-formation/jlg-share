@@ -92,9 +92,6 @@ function SettingsDialog({
       className="settings-dialog"
       aria-labelledby="session-settings-title"
       onCancel={onClose}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       {children}
     </dialog>

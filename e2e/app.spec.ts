@@ -351,6 +351,11 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
     .click();
   await page.screenshot({ path: "test-results/session-settings.png" });
   await page.getByLabel("Mon nom dans la session").fill("Modification annulée");
+  await page.mouse.click(8, 8);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Mon nom dans la session")).toHaveValue(
+    "Modification annulée",
+  );
   await page.getByRole("button", { name: "Annuler", exact: true }).click();
   await page
     .getByRole("button", { name: "Gérer la session", exact: true })
