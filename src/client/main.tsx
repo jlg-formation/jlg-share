@@ -64,6 +64,33 @@ function Brand() {
     </a>
   );
 }
+function SettingsDialog({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const node = dialog.current;
+    if (node && !node.open) node.showModal();
+    return () => node?.close();
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      className="settings-dialog"
+      aria-labelledby="session-settings-title"
+      onCancel={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {children}
+    </dialog>
+  );
+}
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="notice" role="alert">
@@ -156,7 +183,6 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     <>
       <header className="topbar">
         <Brand />
-        <span className="top-caption">L'espace de votre formation</span>
         {me.admin && (
           <button
             className="quiet"
@@ -170,27 +196,11 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
         )}
       </header>
       <main className="home">
-        <div className="hero">
-          <span className="eyebrow">PARTAGER, TOUT SIMPLEMENT</span>
-          <h1>
-            Tout le groupe.
-            <br />
-            <span>Au même endroit.</span>
-          </h1>
-          <p>
-            Un lien pour échanger des idées, des ressources
-            <br className="desktop" /> et des fichiers pendant votre formation.
-          </p>
-        </div>
         {error && <Notice>{error}</Notice>}
         {!me.admin ? (
-          <div className="home-grid">
+          <div className="login-grid">
             <section className="card login">
-              <span className="eyebrow">ESPACE FORMATEUR</span>
-              <h2>Bienvenue chez vous.</h2>
-              <p className="muted">
-                Connectez-vous pour créer et gérer vos sessions.
-              </p>
+              <h1>Connexion administrateur</h1>
               <form onSubmit={login}>
                 <label htmlFor="password">Mot de passe administrateur</label>
                 <input
@@ -207,34 +217,11 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                 </button>
               </form>
             </section>
-            <section className="welcome-note">
-              <span className="note-number">01 / UN ESPACE COMMUN</span>
-              <h2>
-                Moins de pièces jointes.
-                <br />
-                Plus de partage.
-              </h2>
-              <p>
-                Textes, liens et fichiers restent réunis dans le fil de votre
-                session. Rien à installer, aucun compte à créer pour les
-                stagiaires.
-              </p>
-              <div className="note-tags">
-                <span>Chat en direct</span>
-                <span>Fichiers jusqu'à 50 Mo</span>
-                <span>Ressources temporaires</span>
-              </div>
-              <p className="small muted">
-                Vous êtes stagiaire ? Utilisez le lien transmis par votre
-                formateur.
-              </p>
-            </section>
           </div>
         ) : (
           <>
             <div className="home-grid">
               <section className="card">
-                <span className="eyebrow">UNE NOUVELLE FORMATION</span>
                 <h2>Créer une session</h2>
                 <form onSubmit={create}>
                   <label htmlFor="title">Titre de la session</label>
@@ -255,11 +242,9 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                     onChange={(e) => setExpires(e.target.value)}
                   />
                   <p className="hint">
-                    Heure de votre appareil (
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone}). Chats
-                    et fichiers seront supprimés à cette échéance. Vous pourrez
-                    la modifier dans « Gérer la session » tant que la session
-                    reste accessible.
+                    Heure locale :{" "}
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone}. Date
+                    modifiable.
                   </p>
                   <label htmlFor="code">
                     Code d'accès <span className="muted">· facultatif</span>
@@ -282,14 +267,10 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                   <h2>Vos sessions</h2>
                   <span className="pill">{sessions.length}</span>
                 </div>
-                <p className="muted">
-                  Retrouvez les groupes dont les ressources sont encore
-                  disponibles.
-                </p>
                 {sessions.length === 0 ? (
                   <div className="empty-list">
                     <Icon name="file" />
-                    <p>Votre première session commence ici.</p>
+                    <p>Aucune session.</p>
                   </div>
                 ) : (
                   sessions.map((s) => (
@@ -343,9 +324,6 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
           </>
         )}
       </main>
-      <footer>
-        JLG Share <span>Un espace temporaire. Des échanges utiles.</span>
-      </footer>
     </>
   );
 }
@@ -389,7 +367,8 @@ function Room({ id, me }: { id: string; me: Me }) {
     [manage, setManage] = useState(false),
     [deadline, setDeadline] = useState(""),
     [toast, setToast] = useState(""),
-    [drag, setDrag] = useState(false);
+    [drag, setDrag] = useState(false),
+    [mobilePanel, setMobilePanel] = useState<"chat" | "resources">("chat");
   const fileInput = useRef<HTMLInputElement>(null),
     end = useRef<HTMLDivElement>(null),
     form = useRef<HTMLFormElement>(null),
@@ -478,7 +457,8 @@ function Room({ id, me }: { id: string; me: Me }) {
   }, [!!snapshot, id]);
   useEffect(() => {
     if (sent.current) {
-      end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      const messages = end.current?.parentElement;
+      messages?.scrollTo({ top: messages.scrollHeight, behavior: "smooth" });
       sent.current = false;
     }
   }, [snapshot?.publications.length]);
@@ -653,7 +633,7 @@ function Room({ id, me }: { id: string; me: Me }) {
   const sharedFiles = publications.filter((p) => p.kind === "file");
   return (
     <div
-      className="room-layout"
+      className={"room-layout show-" + mobilePanel}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes("Files")) {
           e.preventDefault();
@@ -672,8 +652,11 @@ function Room({ id, me }: { id: string; me: Me }) {
       <header className="topbar">
         <Brand />
         <div className="room-title">
-          <strong>{session.title}</strong>
-          <span className="connection">
+          <h1 title={session.title}>{session.title}</h1>
+          <span
+            className="connection"
+            title={connected ? "En direct" : "Reconnexion…"}
+          >
             <i className={connected ? "online" : ""} />
             {connected ? "En direct" : "Reconnexion…"}
           </span>
@@ -682,15 +665,6 @@ function Room({ id, me }: { id: string; me: Me }) {
           {snapshot.me.nickname}
           {admin ? " (admin)" : ""}
         </span>
-      </header>
-      <div className="room-heading">
-        <div>
-          <span className="eyebrow">VOTRE ESPACE COMMUN</span>
-          <h1>{session.title}</h1>
-          <p className="muted">
-            Échangez un texte, un lien, un fichier. Tout le groupe en profite.
-          </p>
-        </div>
         <div className="room-actions">
           <button
             className="secondary"
@@ -704,94 +678,107 @@ function Room({ id, me }: { id: string; me: Me }) {
               className="secondary"
               onClick={() => {
                 setDeadline(localDate(session.expiresAt));
-                setManage(!manage);
+                setError("");
+                setManage(true);
               }}
             >
               Gérer la session
             </button>
           )}
         </div>
-      </div>
+      </header>
       <div className="expiry-bar">
         <span>
           <Icon name="lock" />
-          Effacement automatique le <strong>{date(session.expiresAt)}</strong>
+          Suppression le <strong>{date(session.expiresAt)}</strong>
         </span>
         <span>
           {participants.length} participant{participants.length > 1 ? "s" : ""}
         </span>
       </div>
       {manage && admin && (
-        <section className="manage card">
-          <h2>Réglages de la session</h2>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                await api(base, "PATCH", {
-                  expiresAt: new Date(deadline).getTime(),
-                });
-                await refresh();
-                setManage(false);
-              } catch (e) {
-                handle(e);
-              }
-            }}
-          >
-            <label htmlFor="new-deadline">
-              Nouvelle date de suppression —{" "}
-              {Intl.DateTimeFormat().resolvedOptions().timeZone}
-            </label>
-            <div className="inline">
-              <input
-                id="new-deadline"
-                type="datetime-local"
-                required
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-              />
-              <button className="primary">Enregistrer</button>
+        <SettingsDialog onClose={() => setManage(false)}>
+          <section className="manage card">
+            <div className="manage-header">
+              <h2 id="session-settings-title">Réglages de la session</h2>
+              <button
+                className="quiet"
+                aria-label="Fermer les réglages"
+                onClick={() => setManage(false)}
+              >
+                <Icon name="close" />
+              </button>
             </div>
-          </form>
-          <div className="inline">
-            <button
-              className="secondary"
-              onClick={async () => {
+            {error && <Notice>{error}</Notice>}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
                 try {
-                  await api(base, "PATCH", { closed: !session.closed });
+                  await api(base, "PATCH", {
+                    expiresAt: new Date(deadline).getTime(),
+                  });
                   await refresh();
+                  setManage(false);
                 } catch (e) {
                   handle(e);
                 }
               }}
             >
-              {session.closed
-                ? "Rouvrir aux stagiaires"
-                : "Fermer aux stagiaires"}
-            </button>
-            <button
-              className="danger"
-              onClick={async () => {
-                if (
-                  confirm(
-                    "Supprimer définitivement cette session, tous ses messages et fichiers ?",
-                  )
-                )
+              <label htmlFor="new-deadline">
+                Nouvelle date de suppression —{" "}
+                {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              </label>
+              <div className="inline">
+                <input
+                  id="new-deadline"
+                  type="datetime-local"
+                  required
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                />
+                <button className="primary">Enregistrer</button>
+              </div>
+            </form>
+            <div className="inline">
+              <button
+                className="secondary"
+                onClick={async () => {
                   try {
-                    await api(base, "DELETE");
-                    location.assign("/");
+                    await api(base, "PATCH", { closed: !session.closed });
+                    await refresh();
                   } catch (e) {
                     handle(e);
                   }
-              }}
-            >
-              Supprimer maintenant
-            </button>
-          </div>
-        </section>
+                }}
+              >
+                {session.closed
+                  ? "Rouvrir aux stagiaires"
+                  : "Fermer aux stagiaires"}
+              </button>
+              <button
+                className="danger"
+                onClick={async () => {
+                  if (
+                    confirm(
+                      "Supprimer définitivement cette session, tous ses messages et fichiers ?",
+                    )
+                  )
+                    try {
+                      await api(base, "DELETE");
+                      location.assign("/");
+                    } catch (e) {
+                      handle(e);
+                    }
+                }}
+              >
+                Supprimer maintenant
+              </button>
+            </div>
+          </section>
+        </SettingsDialog>
       )}
       {session.closed && <Notice>La session est fermée aux stagiaires.</Notice>}
-      {error && (
+      {error && !manage && (
         <div className="inline error-row">
           <Notice>{error}</Notice>
           <button
@@ -803,11 +790,24 @@ function Room({ id, me }: { id: string; me: Me }) {
           </button>
         </div>
       )}
+      <nav className="mobile-tabs" aria-label="Panneaux de la session">
+        <button
+          aria-pressed={mobilePanel === "chat"}
+          onClick={() => setMobilePanel("chat")}
+        >
+          Messages
+        </button>
+        <button
+          aria-pressed={mobilePanel === "resources"}
+          onClick={() => setMobilePanel("resources")}
+        >
+          Fichiers & écran
+        </button>
+      </nav>
       <div className="workspace">
         <section className="chat-panel" aria-label="Chat commun">
           <div className="panel-heading">
-            <h2>Le fil de la session</h2>
-            <span className="small muted">Textes, liens & fichiers</span>
+            <h2>Messages</h2>
           </div>
           <div
             className="messages"
@@ -816,13 +816,7 @@ function Room({ id, me }: { id: string; me: Me }) {
           >
             {publications.length === 0 ? (
               <div className="empty-chat">
-                <span className="empty-symbol">↗</span>
-                <h2>La conversation commence ici.</h2>
-                <p>
-                  Envoyez votre premier message ou déposez un fichier.
-                  <br />
-                  Il sera visible par tous les participants.
-                </p>
+                <p>Aucun message.</p>
               </div>
             ) : (
               publications.map((p) => (
@@ -945,7 +939,7 @@ function Room({ id, me }: { id: string; me: Me }) {
             <form className="composer" onSubmit={send} ref={form}>
               <textarea
                 aria-label="Votre message"
-                placeholder="Un message, un lien, une idée…"
+                placeholder="Votre message…"
                 maxLength={20_000}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -990,21 +984,14 @@ function Room({ id, me }: { id: string; me: Me }) {
                 </button>
               </div>
             </form>
-            <p className="composer-hint">
-              Visible par tout le groupe · 50 Mo maximum par fichier
-            </p>
           </div>
         </section>
         <aside className="resources">
           <section className="card resource-card">
-            <span className="eyebrow">À PORTÉE DE MAIN</span>
             <div className="section-title">
-              <h2>Les fichiers</h2>
+              <h2>Fichiers</h2>
               <span className="pill">{sharedFiles.length}</span>
             </div>
-            <p className="muted small">
-              Toutes les ressources du groupe, sans remonter le fil.
-            </p>
             <div className="quota">
               <span
                 style={{
@@ -1015,13 +1002,11 @@ function Room({ id, me }: { id: string; me: Me }) {
               />
             </div>
             <p className="small muted">
-              {bytes(session.usedBytes)} utilisés sur 1 Go
+              {bytes(session.usedBytes)} / 1 Go · 50 Mo par fichier
             </p>
             <div className="file-list">
               {sharedFiles.length === 0 ? (
-                <p className="empty-files">
-                  Les fichiers partagés apparaîtront ici.
-                </p>
+                <p className="empty-files">Aucun fichier.</p>
               ) : (
                 sharedFiles.map((p) => (
                   <a

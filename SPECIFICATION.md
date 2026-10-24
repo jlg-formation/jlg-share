@@ -137,6 +137,10 @@ Le serveur ne décompresse pas les ZIP et n'exécute pas les fichiers déposés.
 
 La priorité est la lisibilité des textes, du code et des tableaux. La fréquence d'images peut être réduite pour préserver cette lisibilité et limiter le débit. La diffusion de films ou de jeux à haute fréquence n'est pas une cible de la première version.
 
+### 3.7. Ergonomie
+
+Interface minimaliste, avec des libellés courts et sans slogans ni texte décoratif. Le titre de la formation apparaît une seule fois. Dans une session, un en-tête compact conserve les actions « Copier le lien » et « Gérer la session » visibles. La session occupe la hauteur disponible sans défilement global : seuls les messages, listes de fichiers et panneaux longs défilent à l'intérieur de leur zone. Sur mobile, des onglets donnent accès aux échanges ou aux fichiers et à l'écran. Les réglages s'ouvrent dans une fenêtre dédiée plutôt que de déplacer le chat.
+
 ## 4. Parcours proposés
 
 ### Formateur

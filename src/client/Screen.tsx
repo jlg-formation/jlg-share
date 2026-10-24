@@ -69,12 +69,7 @@ export function Screen({
         <rect x="3" y="4" width="18" height="13" rx="2" />
         <path d="M8 21h8m-4-4v4" />
       </svg>
-      <h3>L'écran du formateur</h3>
-      <p>
-        {admin
-          ? "Montrez une fenêtre, un onglet ou votre écran au groupe."
-          : "Regardez la démonstration du formateur, directement ici."}
-      </p>
+      <h3>Écran</h3>
       <video
         className="screen-video"
         ref={video}

@@ -97,6 +97,60 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   const downloadPromise = page.waitForEvent("download");
   await page.locator(".file-list a").click();
   expect((await downloadPromise).suggestedFilename()).toBe("exercice.zip");
+
+  await expect(
+    page.getByRole("heading", { name: "Atelier Excel", exact: true }),
+  ).toHaveCount(1);
+  for (let i = 0; i < 25; i++) {
+    const response = await page.request.post(
+      snapshotPath.replace("/snapshot", "/messages"),
+      {
+        data: { text: "Message de test " + i + "\nUne autre ligne." },
+        headers: { Origin: new URL(url).origin },
+      },
+    );
+    expect(response.status()).toBe(201);
+  }
+  await expect
+    .poll(() =>
+      page
+        .locator(".messages")
+        .evaluate((element) => element.scrollHeight > element.clientHeight),
+    )
+    .toBe(true);
+  for (const viewport of [
+    { width: 1280, height: 600 },
+    { width: 1024, height: 500 },
+    { width: 390, height: 844 },
+    { width: 390, height: 600 },
+  ]) {
+    await page.setViewportSize(viewport);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollHeight <= innerHeight + 1 &&
+          document.documentElement.scrollWidth <= innerWidth + 1 &&
+          window.scrollY === 0,
+      ),
+    ).toBe(true);
+    await expect(
+      page.getByRole("button", { name: "Copier le lien", exact: true }),
+    ).toBeInViewport({ ratio: 1 });
+    await expect(
+      page.getByRole("button", { name: "Gérer la session", exact: true }),
+    ).toBeInViewport({ ratio: 1 });
+    await expect(page.getByLabel("Votre message")).toBeInViewport({ ratio: 1 });
+  }
+  await page
+    .getByRole("button", { name: "Fichiers & écran", exact: true })
+    .click();
+  await expect(
+    page.locator(".file-list").getByText("exercice.zip"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Partager mon écran", exact: true }),
+  ).toBeInViewport({ ratio: 1 });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await guest.setViewportSize({ width: 390, height: 844 });
   await expect(guest.getByLabel("Votre message")).toBeVisible();
   expect(
