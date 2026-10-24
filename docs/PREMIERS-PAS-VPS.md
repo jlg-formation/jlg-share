@@ -494,7 +494,15 @@ gh secret list --repo jlg-formation/jlg-share --env production
 
 La liste partagée contient bien `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` et `VPS_KNOWN_HOSTS`. Elle confirme leur présence, sans révéler leur contenu ni valider leur fonctionnement depuis GitHub.
 
-Un workflow manuel [Vérifier l'accès au VPS](../.github/workflows/check-vps.yml) est préparé pour tester ces quatre paramètres depuis GitHub Actions, sur `main`. Il vérifie l'identité du serveur SSH, l'utilisateur `jlg-deploy`, l'accès à Docker et le droit d'écriture dans le répertoire des versions. Il ne déploie ni ne redémarre de service. Son exécution reste à confirmer ; le résultat attendu est `VPS_ACCESS_OK`.
+Le workflow manuel [Vérifier l'accès au VPS](../.github/workflows/check-vps.yml) teste ces quatre paramètres depuis GitHub Actions, sur `main`. Il vérifie l'identité du serveur SSH, l'utilisateur `jlg-deploy`, l'accès à Docker et le droit d'écriture dans le répertoire des versions. Il ne déploie ni ne redémarre de service.
+
+L'agent a publié le document et le workflow, puis déclenché le test avec :
+
+```text
+gh workflow run check-vps.yml --repo jlg-formation/jlg-share --ref main
+```
+
+L'[exécution 40106006636](https://github.com/jlg-formation/jlg-share/actions/runs/40106006636) a réussi le 24 octobre 2026. Les journaux confirment Compose `v5.6.1`, Docker `29.9.2` et `VPS_ACCESS_OK`. L'accès automatique depuis GitHub est donc validé ; aucun déploiement applicatif n'a été déclenché par ce test.
 
 ## 14. Passage à la gestion automatique des opérations GitHub
 
@@ -502,7 +510,26 @@ Après avoir confirmé la présence des quatre secrets, le propriétaire a deman
 
 Les étapes précédentes sur le VPS ont été exécutées manuellement par le propriétaire, qui a conservé ses mots de passe et phrases secrètes. Les opérations suivantes doivent toujours distinguer préparation, exécution et résultat vérifié, et ne jamais publier de secret ni de contenu de session.
 
-## 15. Où en sommes-nous ?
+## 15. DNS — configuration manuelle à effectuer
+
+Le propriétaire a précisé qu'il effectuera lui-même la configuration DNS dans OVH. Aucun accès à la gestion DNS n'a été fourni à l'agent.
+
+La vérification DNS publique effectuée par l'agent le 24 octobre 2026 a constaté que `share.jlg-consulting.com` et `media.jlg-consulting.com` n'existaient pas encore. Les serveurs DNS du domaine sont `dns.ovh.net` et `ns.ovh.net`.
+
+Dans l'espace client OVH : **Web Cloud → Noms de domaine → jlg-consulting.com → Zone DNS → Ajouter une entrée**. Les entrées proposées pour le démarrage en IPv4 sont :
+
+| Type | Sous-domaine | Cible | Usage |
+| --- | --- | --- | --- |
+| A | `share` | `57.129.186.119` | Application JLG Share |
+| A | `media` | `57.129.186.119` | Adresse proposée pour LiveKit, à confirmer par le propriétaire |
+
+Le TTL peut être fixé à 300 secondes si proposé, ou laissé par défaut. Il suffit d'ajouter ces entrées à la zone existante, en préservant les autres services du domaine. Aucun enregistrement AAAA n'est nécessaire pour ce premier démarrage en IPv4.
+
+La création de ces entrées et leur résolution publique restent à confirmer. Le DNS désigne le serveur ; il ne lance ni l'application ni HTTPS. La configuration applicative et le premier déploiement restent nécessaires.
+
+Référence : [éditer une zone DNS OVHcloud](https://docs.ovhcloud.com/fr/guides/web-cloud/domains/dns-zone-edit).
+
+## 16. Où en sommes-nous ?
 
 **Confirmé :** le VPS est disponible, le mot de passe initial a été remplacé, les ressources ont été vérifiées et la reconnexion après redémarrage a réussi. Le propriétaire a également confirmé que les empreintes SSH vérifiées depuis la console KVM OVH et sa connexion personnelle depuis CMD sont identiques. Le serveur indique qu'aucune mise à jour n'est immédiatement applicable.
 
@@ -516,10 +543,10 @@ Les étapes précédentes sur le VPS ont été exécutées manuellement par le p
 
 **Accès de déploiement validé depuis Windows :** `jlg-deploy` s'authentifie par sa clé dédiée, peut utiliser Docker et écrire dans le répertoire des versions.
 
-**Secrets GitHub présents :** les quatre noms attendus sont listés dans l'environnement `production` ; leur fonctionnement depuis GitHub Actions reste à vérifier.
+**Accès GitHub validé :** les quatre secrets de l'environnement `production` permettent le test SSH, Docker et répertoire de livraison depuis GitHub Actions ; le workflow de vérification a réussi.
 
-**Prochaine étape :** publier puis exécuter le workflow manuel de vérification de l'accès VPS, avant de préparer la configuration applicative et les domaines.
+**Prochaine étape manuelle :** le propriétaire configure les DNS dans OVH. L'agent vérifiera ensuite leur résolution publique.
 
-**Encore à réaliser :** la vérification de l'accès depuis GitHub Actions, la configuration des domaines et des secrets applicatifs sur le VPS, le premier déploiement et ses essais, ainsi que la vérification des mises à jour de sécurité automatiques. Aucun déploiement de JLG Share sur le VPS ni activation du déploiement continu n'a été confirmé à ce stade.
+**Encore à réaliser :** la configuration des domaines et des secrets applicatifs sur le VPS, le premier déploiement et ses essais, ainsi que la vérification des mises à jour de sécurité automatiques. Aucun déploiement de JLG Share sur le VPS ni activation du déploiement continu n'a été confirmé à ce stade.
 
 Le [guide de déploiement](DEPLOIEMENT.md) décrit l'architecture et les étapes prévues pour la suite. La clé personnelle d'administration et la future clé GitHub de déploiement doivent rester distinctes. Aucun mot de passe, aucune phrase secrète et aucune clé privée ne doivent être ajoutés à cette documentation.
