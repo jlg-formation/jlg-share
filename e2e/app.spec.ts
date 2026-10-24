@@ -34,10 +34,15 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
     .getByRole("button", { name: "Créer et ouvrir la session" })
     .click();
   await expect(page.getByLabel("Votre message")).toBeVisible();
-  const url = page.url();
+  await expect(page).toHaveURL(/\/atelier-excel$/);
+  let url = page.url();
+  const initialSnapshot =
+    "/api/sessions/" + new URL(url).pathname.slice(1) + "/snapshot";
+  const beforeExtension = await (
+    await page.request.get(initialSnapshot)
+  ).json();
   const snapshotPath =
-    new URL(url).pathname.replace("/s/", "/api/sessions/") + "/snapshot";
-  const beforeExtension = await (await page.request.get(snapshotPath)).json();
+    "/api/sessions/" + beforeExtension.session.id + "/snapshot";
   await page.getByRole("button", { name: "Gérer la session" }).click();
   const deadline = page.getByLabel(/Nouvelle date de suppression/);
   const extendedDate = await deadline.evaluate((element) => {
@@ -49,6 +54,7 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
       .slice(0, 16);
   });
   await deadline.fill(extendedDate);
+  await page.getByLabel("Adresse de la session").fill("excel-avance");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Réglages de la session" }),
@@ -57,6 +63,8 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   expect(afterExtension.session.expiresAt).toBeGreaterThan(
     beforeExtension.session.expiresAt,
   );
+  await expect(page).toHaveURL(/\/excel-avance$/);
+  url = page.url();
   const context = await browser.newContext({ timezoneId: "Europe/Paris" });
   const guest = await context.newPage();
   await guest.goto(url);
@@ -68,6 +76,12 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await expect(
     page.getByText("Bonjour le groupe !", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Gérer la session" }).click();
+  await page.getByLabel("Adresse de la session").fill("excel");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page).toHaveURL(/\/excel$/);
+  await expect(guest).toHaveURL(/\/excel$/);
+  url = page.url();
   await guest.reload();
   await expect(guest.getByLabel("Votre message")).toBeVisible();
   await guest.getByLabel("Choisir des fichiers").setInputFiles({

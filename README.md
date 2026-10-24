@@ -5,7 +5,7 @@ Un espace temporaire pour partager textes, liens et fichiers pendant une formati
 ## Première version
 
 - Accès formateur par un mot de passe administrateur ; nom affiché configurable avec « (admin) ».
-- Sessions avec titre, échéance de suppression et code d'accès facultatif.
+- Sessions avec titre, adresse courte personnalisable (par exemple `/excel`), échéance de suppression et code d'accès facultatif.
 - Pseudonymes obligatoires et uniques par session, identité retrouvée dans le même navigateur.
 - Chat commun en direct, modification de ses messages et suppression de ses publications ; modération par le formateur.
 - Fichiers de 50 Mo maximum, quota de 1 Go par session, téléchargements contrôlés et dépôts avec progression.

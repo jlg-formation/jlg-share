@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import type { Session, Snapshot, Publication } from "../shared/types";
 import { FILE_LIMIT } from "../shared/types";
 import { api, ApiError, bytes, date, localDate, upload } from "./api";
+import { suggestAddress } from "../shared/address";
 import "./style.css";
 import { Screen } from "./Screen";
 
@@ -106,7 +107,7 @@ function App() {
       .then(setMe)
       .catch((e) => setError(e.message));
   }, []);
-  const match = location.pathname.match(/^\/s\/([a-zA-Z0-9-]+)$/);
+  const match = location.pathname.match(/^\/(?:s\/)?([a-zA-Z0-9-]+)$/);
   if (error)
     return (
       <main className="gate">
@@ -134,6 +135,8 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     [busy, setBusy] = useState(false),
     [sessions, setSessions] = useState<Session[]>([]),
     [title, setTitle] = useState(""),
+    [slug, setSlug] = useState(""),
+    [slugEdited, setSlugEdited] = useState(false),
     [expires, setExpires] = useState(() =>
       localDate(Date.now() + 24 * 60 * 60 * 1000),
     ),
@@ -170,10 +173,11 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     try {
       const s = await api<Session>("/sessions", "POST", {
         title,
+        slug,
         expiresAt: new Date(expires).getTime(),
         code,
       });
-      location.assign("/s/" + s.id);
+      location.assign("/" + s.slug);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -231,8 +235,27 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                     maxLength={120}
                     placeholder="Ex. Excel — les fondamentaux"
                     value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (!slugEdited) setSlug(suggestAddress(e.target.value));
+                    }}
                   />
+                  <label htmlFor="session-address">Adresse de la session</label>
+                  <div className="address-field">
+                    <span>{location.origin}/</span>
+                    <input
+                      id="session-address"
+                      required
+                      maxLength={60}
+                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                      placeholder="excel"
+                      value={slug}
+                      onChange={(e) => {
+                        setSlugEdited(true);
+                        setSlug(e.target.value.toLowerCase());
+                      }}
+                    />
+                  </div>
                   <label htmlFor="expires">Tout effacer le</label>
                   <input
                     id="expires"
@@ -274,7 +297,7 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                   </div>
                 ) : (
                   sessions.map((s) => (
-                    <a className="session-card" key={s.id} href={"/s/" + s.id}>
+                    <a className="session-card" key={s.id} href={"/" + s.slug}>
                       <div>
                         <h3>{s.title}</h3>
                         <p>Suppression le {date(s.expiresAt)}</p>
@@ -343,7 +366,6 @@ function LinkedText({ text }: { text: string }) {
   );
 }
 function Room({ id, me }: { id: string; me: Me }) {
-  const base = "/sessions/" + id;
   const [intro, setIntro] = useState<{
       title: string;
       expiresAt: number;
@@ -366,6 +388,7 @@ function Room({ id, me }: { id: string; me: Me }) {
     [connected, setConnected] = useState(false),
     [manage, setManage] = useState(false),
     [deadline, setDeadline] = useState(""),
+    [addressDraft, setAddressDraft] = useState(""),
     [toast, setToast] = useState(""),
     [drag, setDrag] = useState(false),
     [mobilePanel, setMobilePanel] = useState<"chat" | "resources">("chat");
@@ -373,6 +396,7 @@ function Room({ id, me }: { id: string; me: Me }) {
     end = useRef<HTMLDivElement>(null),
     form = useRef<HTMLFormElement>(null),
     sent = useRef(false);
+  const base = "/sessions/" + (snapshot?.session.id ?? id);
   function handle(e: unknown) {
     const err = e as ApiError;
     if (err.status === 404 || err.status === 410) {
@@ -388,6 +412,7 @@ function Room({ id, me }: { id: string; me: Me }) {
       const data = await api<Snapshot>(base + "/snapshot");
       setSnapshot(data);
       setIntro(data.session);
+      history.replaceState(null, "", "/" + data.session.slug);
       return data;
     } catch (e) {
       handle(e);
@@ -424,7 +449,7 @@ function Room({ id, me }: { id: string; me: Me }) {
     let retry: ReturnType<typeof setTimeout>;
     const connect = () => {
       socket = new WebSocket(
-        `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws?session=${id}`,
+        `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws?session=${snapshot.session.id}`,
       );
       socket.onopen = () => {
         setConnected(true);
@@ -668,7 +693,7 @@ function Room({ id, me }: { id: string; me: Me }) {
         <div className="room-actions">
           <button
             className="secondary"
-            onClick={() => copy(location.origin + "/s/" + id)}
+            onClick={() => copy(location.origin + "/" + session.slug)}
           >
             <Icon name="copy" />
             Copier le lien
@@ -678,6 +703,7 @@ function Room({ id, me }: { id: string; me: Me }) {
               className="secondary"
               onClick={() => {
                 setDeadline(localDate(session.expiresAt));
+                setAddressDraft(session.slug);
                 setError("");
                 setManage(true);
               }}
@@ -716,6 +742,7 @@ function Room({ id, me }: { id: string; me: Me }) {
                 try {
                   await api(base, "PATCH", {
                     expiresAt: new Date(deadline).getTime(),
+                    slug: addressDraft,
                   });
                   await refresh();
                   setManage(false);
@@ -724,6 +751,20 @@ function Room({ id, me }: { id: string; me: Me }) {
                 }
               }}
             >
+              <label htmlFor="new-address">Adresse de la session</label>
+              <div className="address-field">
+                <span>{location.origin}/</span>
+                <input
+                  id="new-address"
+                  required
+                  maxLength={60}
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  value={addressDraft}
+                  onChange={(e) =>
+                    setAddressDraft(e.target.value.toLowerCase())
+                  }
+                />
+              </div>
               <label htmlFor="new-deadline">
                 Nouvelle date de suppression —{" "}
                 {Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -1035,7 +1076,7 @@ function Room({ id, me }: { id: string; me: Me }) {
               Partager un fichier
             </button>
           </section>
-          <Screen sessionId={id} admin={admin} />
+          <Screen sessionId={session.id} admin={admin} />
           <div className="participants-note">
             <strong>Dans cette session</strong>
             <p>

@@ -87,7 +87,7 @@ export class Store {
   resolveSession(reference: string): string {
     const row = this.db
       .query("SELECT session_id FROM session_addresses WHERE slug=?")
-      .get(reference) as { session_id: string } | null;
+      .get(reference.toLowerCase()) as { session_id: string } | null;
     return row?.session_id ?? reference;
   }
   validateAddress(value: unknown): string {

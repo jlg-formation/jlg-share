@@ -1,6 +1,6 @@
 # JLG Share — Spécification initiale
 
-Version : 0.11 — 24 octobre 2026
+Version : 0.12 — 24 octobre 2026
 Statut : document de travail, fondé sur les échanges avec le formateur.
 
 Ce document distingue les décisions déjà retenues des propositions de conception. Les propositions et les questions ouvertes pourront évoluer avant ou pendant le développement.
@@ -55,7 +55,7 @@ Une session regroupe les ressources destinées à un groupe. Le formateur crée 
 
 Propositions :
 
-- À la création, le formateur renseigne un titre, une date et une heure de suppression, et éventuellement un code d'accès. Le lien de session est généré automatiquement.
+- À la création, le formateur renseigne un titre, une date et une heure de suppression, et éventuellement un code d'accès. L'adresse est proposée à partir du titre et choisie par le formateur, par exemple https://share.jlg-consulting.com/excel. Elle ne comporte ni préfixe /s/ ni identifiant aléatoire visible. Le nom d'adresse utilise de 1 à 60 lettres minuscules sans accent, chiffres ou tirets ; il est unique parmi les sessions existantes. Une adresse déjà utilisée est refusée avec un message clair. Le formateur peut modifier cette adresse dans les réglages. Les sessions existantes reçoivent automatiquement une adresse lisible et modifiable, sans perte des ressources. Les participants déjà connectés conservent leur identité et voient leur adresse actualisée ; les anciens liens lisibles ne sont plus valides après renommage.
 - Les stagiaires accèdent à la session sans créer de compte.
 - Chaque stagiaire renseigne obligatoirement un nom affiché non vide : prénom, initiales ou pseudonyme libre. Il ne s'agit pas d'une identité vérifiée. L'auteur est affiché sur chaque message, lien et fichier publié, y compris pour le formateur.
 - Deux participants ne peuvent pas avoir le même pseudonyme dans une même session, y compris celui du formateur. Cette unicité est contrôlée côté serveur, même lors d'arrivées simultanées. Proposition technique : comparer les noms après suppression des espaces de début et fin et sans distinguer majuscules et minuscules. Le pseudonyme reste réservé à son participant jusqu'à expiration de la session, même pendant son absence.
@@ -275,7 +275,7 @@ Les numéros sont conservés pour faciliter le suivi de la discussion. Les point
 
 1. Résolu : nom public JLG Share, sous-domaine `share.jlg-consulting.com`.
 2. Point résolu : usage principal en présentiel ; à distance, usage éventuel limité au partage rapide de fichiers, en complément de Microsoft Teams.
-3. Résolu : titre, date et heure de suppression obligatoires à la création, code facultatif et lien généré automatiquement. Le formateur peut modifier l'échéance avant expiration. Reste la configuration OVH excluant la conservation de contenus expirés dans les sauvegardes ou snapshots.
+3. Résolu : titre, date et heure de suppression obligatoires à la création, code facultatif et adresse lisible choisie par le formateur, directement à la racine du site. Le formateur peut modifier l'échéance avant expiration. Reste la configuration OVH excluant la conservation de contenus expirés dans les sauvegardes ou snapshots.
 4. Limites validées : 50 Mo par fichier pour tous les formats et 1 Go de fichiers au total par session. Reste le quota global du serveur.
 5. Résolu : accès par lien simple, avec mot de passe ou code facultatif.
 6. Résolu : pseudo obligatoire et unique dans chaque session, auteur affiché sur messages et fichiers, identité et droits retrouvés dans le même navigateur ; autre navigateur ou appareil = nouveau participant. Chacun modifie ou supprime ses messages et supprime ses fichiers. Le formateur peut supprimer toute publication ; son nom est configurable et suivi de « (admin) ».

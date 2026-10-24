@@ -1162,3 +1162,33 @@ body:has(.room-layout) {
     transition: none !important;
   }
 }
+
+.address-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cfd9d0;
+  border-radius: 7px;
+  background: white;
+  overflow: hidden;
+}
+.address-field:focus-within {
+  border-color: #578b65;
+  box-shadow: 0 0 0 3px #dfead9;
+}
+.address-field > span {
+  padding-left: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.address-field input {
+  border: 0;
+  border-radius: 0;
+  min-width: 0;
+  flex: 1;
+  padding-left: 2px;
+  box-shadow: none;
+}
