@@ -69,7 +69,8 @@ export class Store {
   requireAdmin(browserId: string) { if (!this.isAdmin(browserId)) fail(401, 'Connectez-vous à votre espace administrateur.'); }
   actor(sessionId: string, browserId: string): Participant {
     const s = this.raw(sessionId);
-    const p = this.db.query('SELECT * FROM participants WHERE session_id=? AND browser_id=?').get(sessionId,browserId) as ActorRow|null;
+    let p = this.db.query('SELECT * FROM participants WHERE session_id=? AND browser_id=?').get(sessionId,browserId) as ActorRow|null;
+    if (!p && this.isAdmin(browserId)) p = this.db.query('SELECT * FROM participants WHERE session_id=? AND admin=1').get(sessionId) as ActorRow|null;
     if (!p) fail(403, 'Rejoignez la session avec votre pseudo.');
     if (p.admin) this.requireAdmin(browserId);
     if (s.closed && !p.admin) fail(403, 'Le formateur a fermé cette session.');
@@ -81,7 +82,7 @@ export class Store {
       if (s.closed && !admin) fail(403, 'Cette session est fermée.');
       if (admin) this.requireAdmin(browserId);
       const existing = this.db.query('SELECT * FROM participants WHERE session_id=? AND browser_id=?').get(sessionId,browserId) as ActorRow|null;
-      if (existing) return this.actor(sessionId,browserId);
+      if (existing || (admin && this.db.query('SELECT id FROM participants WHERE session_id=? AND admin=1').get(sessionId))) return this.actor(sessionId,browserId);
       const n = nickname(requestedName);
       const taken = this.db.query('SELECT id FROM participants WHERE session_id=? AND name_key=?').get(sessionId,nameKey(n));
       if (taken) fail(409, 'Ce pseudo est déjà utilisé dans cette session. Choisissez-en un autre.');
