@@ -684,13 +684,11 @@ function Room({ id, me }: { id: string; me: Me }) {
         <Brand />
         <div className="room-title">
           <h1 title={session.title}>{session.title}</h1>
-          <span
-            className="connection"
-            title={connected ? "Connecté" : "Reconnexion…"}
-          >
-            <i className={connected ? "online" : ""} />
-            {!connected && "Reconnexion…"}
-          </span>
+          {!connected && (
+            <span className="connection" role="status">
+              Reconnexion…
+            </span>
+          )}
         </div>
         <span className="identity">
           {snapshot.me.nickname}

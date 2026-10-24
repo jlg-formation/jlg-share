@@ -128,6 +128,31 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await expect(
     page.getByText("Message corrigé", { exact: true }),
   ).toBeVisible();
+  // Le même message appartient à Alice dans son navigateur, et à un autre
+  // participant dans celui du formateur.
+  await expect(page.locator(".connection")).toHaveCount(0);
+  for (const viewer of [page, guest]) {
+    for (const width of [1280, 390]) {
+      await viewer.setViewportSize({ width, height: 844 });
+      const message = viewer
+        .locator(".message")
+        .filter({ hasText: "Message corrigé" });
+      if (viewer === guest) await expect(message).toHaveClass(/own/);
+      else await expect(message).not.toHaveClass(/own/);
+      const alignment = await message.evaluate((element) => {
+        const area = element.parentElement!.getBoundingClientRect();
+        const bubble = element.getBoundingClientRect();
+        return {
+          left: bubble.left - area.left,
+          right: area.right - bubble.right,
+        };
+      });
+      if (viewer === guest)
+        expect(alignment.left).toBeGreaterThan(alignment.right);
+      else expect(alignment.right).toBeGreaterThan(alignment.left);
+    }
+    await viewer.setViewportSize({ width: 1280, height: 720 });
+  }
   const downloadPromise = page.waitForEvent("download");
   await page.locator(".file-list a").click();
   expect((await downloadPromise).suggestedFilename()).toBe("exercice.zip");

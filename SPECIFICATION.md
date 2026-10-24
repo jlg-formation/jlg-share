@@ -1,6 +1,6 @@
 # JLG Share — Spécification initiale
 
-Version : 0.14 — 24 octobre 2026
+Version : 0.15 — 24 octobre 2026
 Statut : document de travail, fondé sur les échanges avec le formateur.
 
 Ce document distingue les décisions déjà retenues des propositions de conception. Les propositions et les questions ouvertes pourront évoluer avant ou pendant le développement.
@@ -139,11 +139,13 @@ La priorité est la lisibilité des textes, du code et des tableaux. La fréquen
 
 ### 3.7. Ergonomie
 
+Les publications apparaissent dans des bulles : ses propres messages et fichiers à droite, ceux des autres participants à gauche. Cette disposition dépend de la personne connectée, et conserve le pseudo, le rôle du formateur, l’heure et le menu des actions. Les bulles restent lisibles dans les deux thèmes et sur mobile.
+
 Interface minimaliste, avec des libellés courts et sans slogans ni texte décoratif. Le titre de la formation apparaît une seule fois. Dans une session, un en-tête compact conserve l’action « Gérer la session » visible pour le formateur. « Copier le lien » est proposé uniquement sur mobile ; sur ordinateur, l’adresse se copie depuis la barre du navigateur. La session occupe la hauteur disponible sans défilement global : seuls les messages, listes de fichiers et panneaux longs défilent à l'intérieur de leur zone. Sur mobile, des onglets donnent accès aux échanges ou aux fichiers et à l'écran. Les réglages s'ouvrent dans une fenêtre dédiée plutôt que de déplacer le chat.
 
 Deux thèmes, clair et sombre, sont disponibles par un bouton dans l'en-tête. Le premier accès suit le système ; le choix explicite est mémorisé localement pour chaque navigateur. Les sessions, pseudos et autres participants ne sont pas affectés par ce choix.
 
-La lisibilité prime sur la densité : texte courant de 17 px à la taille standard, informations secondaires d'environ 15 px minimum, tailles relatives respectant le grossissement du navigateur, commandes principales d'au moins 44 px de hauteur et contrastes adaptés aux deux thèmes. Les actions de chaque message et fichier sont regroupées sous un bouton « ⋯ », accessible au clic, au toucher et au clavier. Le menu ne présente que les actions autorisées : copier ou télécharger, modifier ses propres messages, supprimer ses propres publications ou modérer en tant qu'administrateur. L'indication ambiguë « En direct » est retirée de l'en-tête ; seule une reconnexion fait apparaître un message.
+La lisibilité prime sur la densité : texte courant de 17 px à la taille standard, informations secondaires d'environ 15 px minimum, tailles relatives respectant le grossissement du navigateur, commandes principales d'au moins 44 px de hauteur et contrastes adaptés aux deux thèmes. Les actions de chaque message et fichier sont regroupées sous un bouton « ⋯ », accessible au clic, au toucher et au clavier. Le menu ne présente que les actions autorisées : copier ou télécharger, modifier ses propres messages, supprimer ses propres publications ou modérer en tant qu'administrateur. L'indication ambiguë « En direct » est retirée de l'en-tête ; aucun point de connexion ne reste affiché lorsque tout fonctionne ; seule une reconnexion fait apparaître un message.
 
 ## 4. Parcours proposés
 
