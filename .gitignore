@@ -9,3 +9,18 @@ test-results/
 *.log
 
 deploy/*.env
+
+# Local credentials, database copies and publication archives
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+release.tar.gz

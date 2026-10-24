@@ -6,6 +6,8 @@ export class ApiError extends Error {
     super(message);
   }
 }
+let clockOffset = 0;
+export const serverNow = () => Date.now() + clockOffset;
 export async function api<T = any>(
   path: string,
   method = "GET",
@@ -19,6 +21,8 @@ export async function api<T = any>(
     cache: "no-store",
   });
   const data = await response.json();
+  const serverTime = Number(response.headers.get("X-Server-Time"));
+  if (serverTime > 0) clockOffset = serverTime - Date.now();
   if (!response.ok)
     throw new ApiError(response.status, data.error ?? "La demande a échoué.");
   return data;
@@ -31,17 +35,6 @@ export const bytes = (value: number) =>
       : value >= 1000
         ? `${Math.ceil(value / 1000)} ko`
         : `${value} o`;
-export const date = (value: number) =>
-  new Intl.DateTimeFormat("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(value);
-export const localDate = (value: number) => {
-  const d = new Date(value);
-  return new Date(value - d.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
-};
 export function upload(
   path: string,
   file: File,

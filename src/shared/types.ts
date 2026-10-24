@@ -3,13 +3,20 @@ export type Session = {
   id: string;
   title: string;
   expiresAt: number;
+  timeZone: string;
   protected: boolean;
   usedBytes: number;
 };
-export type Participant = { id: string; nickname: string; admin: boolean };
+export type Participant = {
+  id: string;
+  nickname: string;
+  admin: boolean;
+  avatarId: number;
+};
 export type Publication = {
   id: string;
   participantId: string;
+  avatarId: number;
   nickname: string;
   admin: boolean;
   kind: "text" | "file";

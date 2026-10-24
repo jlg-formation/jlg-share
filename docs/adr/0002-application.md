@@ -15,4 +15,4 @@ LiveKit est un service distinct derrière un adaptateur média. Le chat et les f
 
 ## Conséquences
 
-Un seul processus applicatif assure la cohérence des connexions et des quotas ; ne pas multiplier ses instances sans revoir la coordination. Les sessions multiples sont possibles dans la limite du disque ; un seul écran peut diffuser à la fois. La licence du code public reste à choisir avant publication.
+Un seul processus applicatif assure la cohérence des connexions et des quotas ; ne pas multiplier ses instances sans revoir la coordination. Les sessions multiples sont possibles dans la limite du disque ; un seul écran peut diffuser à la fois. Le code public est distribué sous licence MIT.

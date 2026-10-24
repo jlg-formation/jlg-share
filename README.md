@@ -6,11 +6,14 @@ Un espace temporaire pour partager textes, liens et fichiers pendant une formati
 
 - Accès formateur par un mot de passe administrateur ; nom affiché configurable avec « (admin) ».
 - Sessions avec titre, adresse courte personnalisable (par exemple `/excel`), échéance de suppression et code d'accès facultatif.
+- Échéance choisie en temps restant : dans 24 h, ce soir ou demain à minuit, dans 7 jours, ou durée libre. Calendrier disponible à la demande ; affichage du temps restant sur les cartes, à l'entrée et dans les réglages. Dans l'espace de partage, l'en-tête affiche le nombre de participants après le titre et une roue dentée donne accès aux réglages, sans bandeau d'échéance.
 - Pseudonymes obligatoires et uniques par session, identité retrouvée dans le même navigateur.
+- Avatars SVG au choix : 20 personnages pour les stagiaires et 6 réservés au formateur, avec des personnages par défaut distincts. Le formateur choisit dès la création de session, les stagiaires à l'entrée ; chacun peut ensuite changer dans les réglages. L'avatar du formateur par défaut reprend l'ancien personnage 1 à lunettes et barbe brune, désormais remplacé chez les stagiaires. Le choix est conservé par session et répercuté sur les messages et fichiers existants. Le serveur contrôle les collections autorisées. Voir la [planche des avatars](docs/avatars.svg), régénérable avec `bun scripts/export-avatars.tsx`.
 - Chat commun en direct, modification de ses messages et suppression de ses publications ; modération par le formateur.
 - Fichiers de 50 Mo maximum, quota de 1 Go par session, téléchargements contrôlés et dépôts avec progression.
 - Suppression automatique des messages, participants et fichiers à l'échéance ; modification de l'échéance possible avant expiration.
 - Interface responsive, textes lisibles, actions regroupées dans un menu « ⋯ », thèmes clair et sombre mémorisés par navigateur.
+- Interface délimitée par de simples séparations, sans grandes cartes arrondies ; chat sans titre ni aide permanente de saisie, avec l'invitation « Une idée, un lien, un petit mot ? ».
 - Partage d'écran avec LiveKit, sans micro, caméra ni enregistrement.
 
 ## Démarrer en local
@@ -37,6 +40,8 @@ bun start
 ```
 
 Ouvrir [http://localhost:3000](http://localhost:3000). Le chat et les fichiers fonctionnent sans LiveKit. Le bouton de partage d'écran indique son indisponibilité tant que ses paramètres ne sont pas configurés.
+
+Au démarrage, les évolutions de la base sont appliquées automatiquement, y compris le passage de l'ancienne limite de 20 avatars aux deux collections. Les sessions encore valides, participants, publications et fichiers sont conservés ; aucune réinitialisation de `data/` n'est nécessaire.
 
 Pour développer avec rechargement de l'interface, lancer dans un premier terminal :
 
@@ -83,7 +88,7 @@ Voir la [spécification](SPECIFICATION.md), l'[ADR LiveKit](docs/adr/0001-liveki
 
 Le partage d'écran est intégré mais sa transmission réelle, TURN et la charge de vingt spectateurs doivent encore être validés sur un environnement LiveKit et les réseaux de formation. Le test des vingt connexions concerne le **chat**, pas vingt flux vidéo. Les essais navigateur locaux ont été réalisés sur Edge ; Firefox, Chrome, Brave et Safari restent à vérifier séparément.
 
-Les fichiers Docker et workflows sont préparés ; la construction Docker et l'installation Linux restent à exécuter sur un hôte équipé. Aucun VPS, DNS ou dépôt distant n'a été modifié pendant cette implémentation.
+Les fichiers Docker et workflows sont préparés ; la construction Docker et l'installation Linux restent à exécuter sur un hôte équipé. La publication GitHub ne déclenche pas le déploiement : aucun VPS ni DNS n'est modifié.
 
 Les échéances sont vérifiées par le serveur à chaque accès et la purge est programmée. Un VPS arrêté ne peut pas effacer ses fichiers pendant son arrêt ; les données expirées sont purgées au redémarrage avant d'ouvrir le service. Les copies déjà téléchargées par les participants ne peuvent pas être effacées à distance. Les sauvegardes OVH doivent être configurées pour respecter la suppression.
 
@@ -91,4 +96,6 @@ Un délai de libération média pouvant atteindre environ 40 secondes protège c
 
 ## Publication et licence
 
-Le projet est destiné à un dépôt GitHub public. Le compte, le dépôt distant et la licence doivent être définis avant publication. Aucune licence de réutilisation du code applicatif n'est encore accordée dans cette première version. Les composants tiers conservent leurs propres licences.
+Le dépôt public est [jlg-formation/jlg-share](https://github.com/jlg-formation/jlg-share). Le code applicatif est distribué sous [licence MIT](LICENSE). Les composants tiers conservent leurs propres licences.
+
+Les secrets et données locales sont exclus de Git. Un workflow Gitleaks contrôle l'historique lors des push sur `main` et des pull requests ; GitHub active également la détection des secrets et la protection des envois. Ces contrôles ne remplacent pas la vérification locale avant publication. Voir la [politique de sécurité](SECURITY.md) pour signaler une vulnérabilité de manière privée et réagir en cas de fuite.

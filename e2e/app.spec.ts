@@ -14,21 +14,15 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await page.getByLabel("Votre nom dans les échanges").fill("Jean-Louis");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await page.getByLabel("Titre de la session").fill("Atelier Excel");
-  const defaultDelay = await page
-    .getByLabel("Tout effacer le")
-    .evaluate(
-      (element) =>
-        new Date((element as HTMLInputElement).value).getTime() - Date.now(),
-    );
-  expect(defaultDelay).toBeGreaterThan(24 * 60 * 60 * 1000 - 120_000);
-  expect(defaultDelay).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
-  const tomorrow = new Date(Date.now() + 2 * 86400000);
-  const local = new Date(
-    tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000,
-  )
-    .toISOString()
-    .slice(0, 16);
-  await page.getByLabel("Tout effacer le").fill(local);
+  await expect(
+    page.getByRole("radio", { name: "Dans 24 h", exact: true }),
+  ).toBeChecked();
+  await expect(page.locator('input[type="datetime-local"]')).toHaveCount(0);
+  await page.getByRole("radio", { name: "Autre durée…" }).check();
+  await expect(
+    page.getByRole("spinbutton", { name: "Dans", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("spinbutton", { name: "Dans", exact: true }).fill("2");
   await page.getByLabel("Code d'accès").fill("bonjour");
   await page
     .getByRole("button", { name: "Créer et ouvrir la session" })
@@ -44,16 +38,12 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   const snapshotPath =
     "/api/sessions/" + beforeExtension.session.id + "/snapshot";
   await page.getByRole("button", { name: "Gérer la session" }).click();
-  const deadline = page.getByLabel(/Nouvelle date de suppression/);
-  const extendedDate = await deadline.evaluate((element) => {
-    const d = new Date(
-      new Date((element as HTMLInputElement).value).getTime() + 86400000,
-    );
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-  });
-  await deadline.fill(extendedDate);
+  await expect(page.getByText(/Temps restant :/)).toBeVisible();
+  await page.getByRole("button", { name: "Modifier", exact: true }).click();
+  await expect(
+    page.getByRole("radio", { name: "Dans 24 h", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("radio", { name: "Dans 7 jours", exact: true }).check();
   await page.getByLabel("Adresse de la session").fill("excel-avance");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(
@@ -80,6 +70,9 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   await page.getByLabel("Adresse de la session").fill("excel");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page).toHaveURL(/\/excel$/);
+  expect(
+    (await (await page.request.get(snapshotPath)).json()).session.expiresAt,
+  ).toBe(afterExtension.session.expiresAt);
   await expect(guest).toHaveURL(/\/excel$/);
   url = page.url();
   await guest.reload();
@@ -134,6 +127,12 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
   for (const viewer of [page, guest]) {
     for (const width of [1280, 390]) {
       await viewer.setViewportSize({ width, height: 844 });
+      await expect(viewer.getByText(/Tout sera effacé/)).toHaveCount(0);
+      await expect(viewer.locator(".message .avatar")).toHaveCount(0);
+      await expect(viewer.locator(".person-avatar svg").first()).toBeVisible();
+      const count = viewer.locator(".room-title .participant-count");
+      await expect(count).toHaveText("2 participants");
+      await expect(count).toBeInViewport({ ratio: 1 });
       const message = viewer
         .locator(".message")
         .filter({ hasText: "Message corrigé" });

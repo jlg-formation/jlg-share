@@ -4,6 +4,25 @@ import { join } from "node:path";
 import type { Session, Participant, Publication } from "../shared/types";
 import { SESSION_LIMIT } from "../shared/types";
 import { suggestAddress, reservedAddresses } from "../shared/address";
+import { SESSION_TIMEZONE } from "../shared/deadline";
+import {
+  DEFAULT_AVATAR,
+  DEFAULT_TRAINER_AVATAR,
+  avatarAllowed,
+} from "../shared/avatars";
+
+function avatarId(value: unknown, admin: boolean): number {
+  if (value === undefined)
+    return admin ? DEFAULT_TRAINER_AVATAR : DEFAULT_AVATAR;
+  if (!avatarAllowed(value, admin))
+    fail(
+      400,
+      admin
+        ? "Choisissez un avatar dans la collection formateur."
+        : "Choisissez un avatar dans la collection stagiaires.",
+    );
+  return value;
+}
 
 export class AppError extends Error {
   constructor(
@@ -40,6 +59,7 @@ type RawSession = {
 };
 type ActorRow = {
   id: string;
+  avatar_id: number;
   nickname: string;
   admin: number;
   browser_id: string;
@@ -63,8 +83,46 @@ export class Store {
       CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, size INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS publications_session ON publications(session_id,created_at);
       CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions(expires_at);`);
+    if (
+      !(
+        this.db.query("PRAGMA table_info(participants)").all() as {
+          name: string;
+        }[]
+      ).some((column) => column.name === "avatar_id")
+    )
+      this.db.exec(
+        "ALTER TABLE participants ADD COLUMN avatar_id INTEGER NOT NULL DEFAULT 1 CHECK(avatar_id BETWEEN 1 AND 26)",
+      );
+    const participantSchema = this.db
+      .query(
+        "SELECT sql FROM sqlite_schema WHERE type='table' AND name='participants'",
+      )
+      .get() as { sql: string };
+    if (
+      /CHECK\s*\(\s*avatar_id\s+BETWEEN\s+1\s+AND\s+20\s*\)/i.test(
+        participantSchema.sql,
+      )
+    ) {
+      // Earlier development databases already have this column, but its CHECK
+      // still excludes trainer avatars. Replace only the column, atomically,
+      // without rebuilding participants or affecting publication foreign keys.
+      this.db.transaction(() => {
+        this.db.exec(`
+          ALTER TABLE participants ADD COLUMN avatar_id_next INTEGER NOT NULL DEFAULT 1 CHECK(avatar_id_next BETWEEN 1 AND 26);
+          UPDATE participants SET avatar_id_next=avatar_id;
+          ALTER TABLE participants DROP COLUMN avatar_id;
+          ALTER TABLE participants RENAME COLUMN avatar_id_next TO avatar_id;
+        `);
+      })();
+    }
+    this.db.exec(
+      "UPDATE participants SET avatar_id=21 WHERE admin=1 AND avatar_id<=20",
+    );
     this.db.exec(
       "CREATE TABLE IF NOT EXISTS session_addresses (slug TEXT PRIMARY KEY, session_id TEXT NOT NULL UNIQUE REFERENCES sessions(id) ON DELETE CASCADE)",
+    );
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS session_timezones (session_id TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE, timezone TEXT NOT NULL)",
     );
     for (const row of this.db.query("SELECT id FROM sessions").all() as {
       id: string;
@@ -203,9 +261,20 @@ export class Store {
       slug: this.address(s.id),
       title: s.title,
       expiresAt: s.expires_at,
+      timeZone: this.timeZone(sessionId),
       protected: !!s.code_hash,
       usedBytes: usage.size,
     };
+  }
+  timeZone(sessionId: string): string {
+    this.db
+      .query("INSERT OR IGNORE INTO session_timezones VALUES (?,?)")
+      .run(sessionId, SESSION_TIMEZONE);
+    return (
+      this.db
+        .query("SELECT timezone FROM session_timezones WHERE session_id=?")
+        .get(sessionId) as { timezone: string }
+    ).timezone;
   }
   isAdmin(browserId: string) {
     const b = this.db
@@ -228,14 +297,21 @@ export class Store {
         .get(sessionId) as ActorRow | null;
     if (!p) fail(403, "Rejoignez la session avec votre pseudo.");
     if (p.admin) this.requireAdmin(browserId);
-    return { id: p.id, nickname: p.nickname, admin: !!p.admin };
+    return {
+      id: p.id,
+      nickname: p.nickname,
+      admin: !!p.admin,
+      avatarId: p.avatar_id,
+    };
   }
   join(
     sessionId: string,
     browserId: string,
     requestedName: string,
     admin: boolean,
+    requestedAvatar?: unknown,
   ): Participant {
+    const selectedAvatar = avatarId(requestedAvatar, admin);
     return this.db.transaction(() => {
       this.raw(sessionId);
       if (admin) this.requireAdmin(browserId);
@@ -261,15 +337,39 @@ export class Store {
         );
       const participantId = id();
       this.db
-        .query("INSERT INTO participants VALUES (?,?,?,?,?,?)")
-        .run(participantId, sessionId, browserId, n, nameKey(n), admin ? 1 : 0);
-      return { id: participantId, nickname: n, admin };
+        .query(
+          "INSERT INTO participants (id,session_id,browser_id,nickname,name_key,admin,avatar_id) VALUES (?,?,?,?,?,?,?)",
+        )
+        .run(
+          participantId,
+          sessionId,
+          browserId,
+          n,
+          nameKey(n),
+          admin ? 1 : 0,
+          selectedAvatar,
+        );
+      return {
+        id: participantId,
+        nickname: n,
+        admin,
+        avatarId: selectedAvatar,
+      };
     })();
   }
-  rename(sessionId: string, browserId: string, value: unknown): Participant {
-    const name = nickname(value);
+  rename(
+    sessionId: string,
+    browserId: string,
+    value: unknown,
+    requestedAvatar?: unknown,
+  ): Participant {
     return this.db.transaction(() => {
       const current = this.actor(sessionId, browserId);
+      const name = value === undefined ? current.nickname : nickname(value);
+      const selectedAvatar =
+        requestedAvatar === undefined
+          ? current.avatarId
+          : avatarId(requestedAvatar, current.admin);
       const taken = this.db
         .query(
           "SELECT id FROM participants WHERE session_id=? AND name_key=? AND id<>?",
@@ -281,15 +381,17 @@ export class Store {
           "Ce pseudo est déjà utilisé dans cette session. Choisissez-en un autre.",
         );
       this.db
-        .query("UPDATE participants SET nickname=?,name_key=? WHERE id=?")
-        .run(name, nameKey(name), current.id);
+        .query(
+          "UPDATE participants SET nickname=?,name_key=?,avatar_id=? WHERE id=?",
+        )
+        .run(name, nameKey(name), selectedAvatar, current.id);
       return this.actor(sessionId, browserId);
     })();
   }
   publications(sessionId: string): Publication[] {
     return this.db
       .query(
-        `SELECT p.id, p.participant_id AS participantId, a.nickname, a.admin, p.kind, p.text, p.filename, p.size, p.created_at AS createdAt, p.edited_at AS editedAt FROM publications p JOIN participants a ON a.id=p.participant_id WHERE p.session_id=? ORDER BY p.created_at,p.rowid`,
+        `SELECT p.id, p.participant_id AS participantId, a.nickname, a.admin, a.avatar_id AS avatarId, p.kind, p.text, p.filename, p.size, p.created_at AS createdAt, p.edited_at AS editedAt FROM publications p JOIN participants a ON a.id=p.participant_id WHERE p.session_id=? ORDER BY p.created_at,p.rowid`,
       )
       .all(sessionId)
       .map((row) => ({

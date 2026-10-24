@@ -7,6 +7,7 @@ import { FILE_LIMIT } from "../shared/types";
 import { suggestAddress } from "../shared/address";
 import type { MediaService } from "./media";
 import { allowsOrigin } from "./origin";
+import { resolveDeadline, SESSION_TIMEZONE } from "../shared/deadline";
 
 export type Config = {
   origin: string;
@@ -17,13 +18,33 @@ export type Config = {
 type SocketData = { sessionId: string; browserId: string };
 const digest = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const json = (value: unknown, status = 200) =>
-  Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
 const cookieName = "jlg_browser";
 const adminLifetime = 12 * 60 * 60 * 1000;
 const browserLifetime = 90 * 24 * 60 * 60 * 1000;
 
 export function createApp(store: Store, config: Config, media?: MediaService) {
+  function json(value: unknown, status = 200) {
+    return Response.json(value, {
+      status,
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Server-Time": String(store.now()),
+      },
+    });
+  }
+  function chosenExpiry(
+    input: Record<string, unknown>,
+    timeZone = SESSION_TIMEZONE,
+  ) {
+    if (input.deadline !== undefined && input.expiresAt !== undefined)
+      fail(400, "Choisissez une seule échéance.");
+    if (input.deadline === undefined) return expiry(input.expiresAt);
+    try {
+      return resolveDeadline(input.deadline, store.now(), timeZone);
+    } catch (error) {
+      fail(400, (error as Error).message);
+    }
+  }
   const sockets = new Set<ServerWebSocket<SocketData>>();
   const attempts = new Map<string, { count: number; reset: number }>();
   let expiryTimer: ReturnType<typeof setTimeout>;
@@ -243,7 +264,6 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       if (req.method === "POST") {
         const input = await body(req);
         const sessionTitle = title(input.title);
-        const expiresAt = expiry(input.expiresAt);
         if (
           input.code !== undefined &&
           (typeof input.code !== "string" || input.code.length > 128)
@@ -254,24 +274,24 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
           ? await Bun.password.hash(code, { algorithm: "argon2id" })
           : null;
         store.requireAdmin(browserId);
-        expiry(expiresAt);
+        const expiresAt = chosenExpiry(input);
         const sessionId =
           id().slice(0, 8) + "-" + randomBytes(3).toString("hex");
         const slug = store.validateAddress(
           input.slug ?? (suggestAddress(sessionTitle) || "session"),
         );
-        store.db.transaction(() => {
-          store.db
-            .query("INSERT INTO sessions VALUES (?,?,?,0,?)")
-            .run(sessionId, sessionTitle, expiresAt, hash);
-          store.setAddress(sessionId, slug);
-        })();
         const name = (
           store.db
             .query("SELECT value FROM settings WHERE key='admin_name'")
             .get() as { value: string }
         ).value;
-        store.join(sessionId, browserId, name, true);
+        store.db.transaction(() => {
+          store.db
+            .query("INSERT INTO sessions VALUES (?,?,?,0,?)")
+            .run(sessionId, sessionTitle, expiresAt, hash);
+          store.setAddress(sessionId, slug);
+          store.join(sessionId, browserId, name, true, input.avatarId);
+        })();
         schedule();
         return json(store.session(sessionId), 201);
       }
@@ -287,6 +307,7 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
         slug: store.address(s.id),
         title: s.title,
         expiresAt: s.expires_at,
+        timeZone: store.timeZone(s.id),
         protected: !!s.code_hash,
       });
     if (action === "join" && req.method === "POST") {
@@ -314,7 +335,13 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
           ).value
         : input.nickname;
       if (!current) nickname(name);
-      const result = store.join(sessionId, browserId, name as string, admin);
+      const result = store.join(
+        sessionId,
+        browserId,
+        name as string,
+        admin,
+        input.avatarId,
+      );
       notify(sessionId);
       return json(result);
     }
@@ -324,10 +351,12 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       store.requireAdmin(browserId);
       store.raw(sessionId);
       const nextExpiry =
-        input.expiresAt === undefined ? undefined : expiry(input.expiresAt);
+        input.expiresAt === undefined && input.deadline === undefined
+          ? undefined
+          : chosenExpiry(input, store.timeZone(sessionId));
       store.db.transaction(() => {
-        if (input.nickname !== undefined)
-          store.rename(sessionId, browserId, input.nickname);
+        if (input.nickname !== undefined || input.avatarId !== undefined)
+          store.rename(sessionId, browserId, input.nickname, input.avatarId);
         if (input.slug !== undefined) store.setAddress(sessionId, input.slug);
         if (nextExpiry !== undefined)
           store.db
@@ -349,14 +378,14 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
     const actor = store.actor(sessionId, browserId);
     if (action === "me" && req.method === "PATCH") {
       const input = await body(req);
-      store.rename(sessionId, browserId, input.nickname);
+      store.rename(sessionId, browserId, input.nickname, input.avatarId);
       notify(sessionId);
       return json(store.actor(sessionId, browserId));
     }
     if (action === "snapshot" && req.method === "GET") {
       const participants = store.db
         .query(
-          "SELECT id,nickname,admin FROM participants WHERE session_id=? ORDER BY admin DESC,nickname",
+          "SELECT id,nickname,admin,avatar_id AS avatarId FROM participants WHERE session_id=? ORDER BY admin DESC,nickname",
         )
         .all(sessionId)
         .map((p) => ({

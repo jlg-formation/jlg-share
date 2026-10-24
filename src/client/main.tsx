@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Session, Snapshot, Publication } from "../shared/types";
 import { FILE_LIMIT } from "../shared/types";
-import { api, ApiError, bytes, date, localDate, upload } from "./api";
+import { api, ApiError, bytes, serverNow, upload } from "./api";
+import { DeadlinePicker, ExpiryText, useNow } from "./DeadlinePicker";
+import { resolveDeadline, type DeadlineChoice } from "../shared/deadline";
 import { suggestAddress } from "../shared/address";
 import "./style.css";
 import { Screen } from "./Screen";
 import { ThemeToggle } from "./ThemeToggle";
 import { PublicationMenu } from "./PublicationMenu";
+import { Avatar, AvatarPicker } from "./Avatar";
+import { DEFAULT_AVATAR, DEFAULT_TRAINER_AVATAR } from "../shared/avatars";
 
 type Me = { admin: boolean; name: string };
 function Icon({ name }: { name: string }) {
@@ -33,6 +37,15 @@ function Icon({ name }: { name: string }) {
     ),
     download: <path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4" />,
     close: <path d="m6 6 12 12M6 18 18 6" />,
+    settings: (
+      <>
+        <path
+          d="m9 3-.6 2.4-1.2.7L4.8 5.4l-3 5.2 1.8 1.7v1.4l-1.8 1.7 3 5.2 2.4-.7 1.2.7L9 23h6l.6-2.4 1.2-.7 2.4.7 3-5.2-1.8-1.7v-1.4l1.8-1.7-3-5.2-2.4.7-1.2-.7L15 3Z"
+          transform="translate(1.2 0) scale(.9)"
+        />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
     send: <path d="m3 3 19 9-19 9 4-9-4-9Zm4 9h15" />,
     lock: (
       <>
@@ -144,9 +157,12 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     [title, setTitle] = useState(""),
     [slug, setSlug] = useState(""),
     [slugEdited, setSlugEdited] = useState(false),
-    [expires, setExpires] = useState(() =>
-      localDate(Date.now() + 24 * 60 * 60 * 1000),
-    ),
+    [trainerAvatarId, setTrainerAvatarId] = useState(DEFAULT_TRAINER_AVATAR),
+    [expires, setExpires] = useState<DeadlineChoice>({
+      kind: "duration",
+      amount: 24,
+      unit: "hours",
+    }),
     [code, setCode] = useState(""),
     [name, setName] = useState(me.name);
   async function refresh() {
@@ -157,7 +173,19 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     }
   }
   useEffect(() => {
-    if (me.admin) void refresh();
+    if (!me.admin) return;
+    const update = () => {
+      if (!document.hidden) void refresh();
+    };
+    update();
+    const timer = setInterval(update, 60_000);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+    };
   }, [me.admin]);
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -178,11 +206,13 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
     setBusy(true);
     setError("");
     try {
+      resolveDeadline(expires, serverNow());
       const s = await api<Session>("/sessions", "POST", {
         title,
         slug,
-        expiresAt: new Date(expires).getTime(),
+        deadline: expires,
         code,
+        avatarId: trainerAvatarId,
       });
       location.assign("/" + s.slug);
     } catch (e) {
@@ -261,19 +291,11 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                       setSlug(e.target.value.toLowerCase());
                     }}
                   />
-                  <label htmlFor="expires">Tout effacer le</label>
-                  <input
-                    id="expires"
-                    type="datetime-local"
-                    required
+                  <DeadlinePicker
                     value={expires}
-                    onChange={(e) => setExpires(e.target.value)}
+                    onChange={setExpires}
+                    disabled={busy}
                   />
-                  <p className="hint">
-                    Heure locale :{" "}
-                    {Intl.DateTimeFormat().resolvedOptions().timeZone}. Date
-                    modifiable.
-                  </p>
                   <label htmlFor="code">
                     Code d'accès <span className="muted">· facultatif</span>
                   </label>
@@ -283,6 +305,12 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                     autoComplete="off"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
+                  />
+                  <AvatarPicker
+                    value={trainerAvatarId}
+                    onChange={setTrainerAvatarId}
+                    disabled={busy}
+                    admin
                   />
                   <button className="primary" disabled={busy}>
                     <Icon name="plus" />
@@ -305,7 +333,12 @@ function Home({ me, setMe }: { me: Me; setMe: (me: Me) => void }) {
                     <a className="session-card" key={s.id} href={"/" + s.slug}>
                       <div>
                         <h3>{s.title}</h3>
-                        <p>Suppression le {date(s.expiresAt)}</p>
+                        <p>
+                          <ExpiryText
+                            expiresAt={s.expiresAt}
+                            timeZone={s.timeZone}
+                          />
+                        </p>
                         <span className="small">
                           {s.protected ? "Accès avec code" : "Accès par lien"} ·{" "}
                           {bytes(s.usedBytes)}
@@ -370,12 +403,14 @@ function Room({ id, me }: { id: string; me: Me }) {
   const [intro, setIntro] = useState<{
       title: string;
       expiresAt: number;
+      timeZone: string;
       protected: boolean;
     } | null>(null),
     [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [error, setError] = useState(""),
     [fatal, setFatal] = useState(""),
     [nickname, setNickname] = useState(""),
+    [avatarId, setAvatarId] = useState(DEFAULT_AVATAR),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
     [draft, setDraft] = useState(""),
@@ -388,9 +423,10 @@ function Room({ id, me }: { id: string; me: Me }) {
     [connected, setConnected] = useState(false),
     [manage, setManage] = useState(false),
     [profileName, setProfileName] = useState(""),
+    [profileAvatar, setProfileAvatar] = useState(DEFAULT_AVATAR),
     [profileError, setProfileError] = useState(""),
     [profileBusy, setProfileBusy] = useState(false),
-    [deadline, setDeadline] = useState(""),
+    [deadline, setDeadline] = useState<DeadlineChoice | null>(null),
     [addressDraft, setAddressDraft] = useState(""),
     [toast, setToast] = useState(""),
     [drag, setDrag] = useState(false),
@@ -400,6 +436,7 @@ function Room({ id, me }: { id: string; me: Me }) {
     form = useRef<HTMLFormElement>(null),
     sent = useRef(false);
   const base = "/sessions/" + (snapshot?.session.id ?? id);
+  const now = useNow();
   function handle(e: unknown) {
     const err = e as ApiError;
     if (err.status === 404 || err.status === 410) {
@@ -501,16 +538,16 @@ function Room({ id, me }: { id: string; me: Me }) {
       () => {
         void refresh();
       },
-      Math.max(0, Math.min(2_147_000_000, intro.expiresAt - Date.now() + 50)),
+      Math.max(0, Math.min(2_147_000_000, intro.expiresAt - serverNow() + 50)),
     );
     return () => clearTimeout(t);
-  }, [intro?.expiresAt]);
+  }, [intro?.expiresAt, now]);
   async function join(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      await api(base + "/join", "POST", { nickname, code });
+      await api(base + "/join", "POST", { nickname, code, avatarId });
       await refresh();
     } catch (e) {
       handle(e);
@@ -640,12 +677,20 @@ function Room({ id, me }: { id: string; me: Me }) {
                     />
                   </>
                 )}
+                <AvatarPicker
+                  value={avatarId}
+                  onChange={setAvatarId}
+                  disabled={busy}
+                />
                 <button className="primary" disabled={busy}>
                   {busy ? "Connexion…" : "Rejoindre la session"}
                   <Icon name="arrow" />
                 </button>
                 <p className="hint">
-                  Tout sera effacé le {date(intro.expiresAt)}.
+                  <ExpiryText
+                    expiresAt={intro.expiresAt}
+                    timeZone={intro.timeZone}
+                  />
                 </p>
               </form>
             )}
@@ -678,6 +723,10 @@ function Room({ id, me }: { id: string; me: Me }) {
         <Brand />
         <div className="room-title">
           <h1 title={session.title}>{session.title}</h1>
+          <span className="participant-count">
+            {participants.length} participant
+            {participants.length > 1 ? "s" : ""}
+          </span>
           {!connected && (
             <span className="connection" role="status">
               Reconnexion…
@@ -698,29 +747,23 @@ function Room({ id, me }: { id: string; me: Me }) {
             Copier le lien
           </button>
           <button
-            className="secondary"
+            className="secondary session-settings-button"
+            aria-label="Gérer la session"
+            title="Gérer la session"
             onClick={() => {
               setProfileName(snapshot.me.nickname);
+              setProfileAvatar(snapshot.me.avatarId);
               setProfileError("");
-              setDeadline(localDate(session.expiresAt));
+              setDeadline(null);
               setAddressDraft(session.slug);
               setError("");
               setManage(true);
             }}
           >
-            Gérer la session
+            <Icon name="settings" />
           </button>
         </div>
       </header>
-      <div className="expiry-bar">
-        <span>
-          <Icon name="lock" />
-          Suppression le <strong>{date(session.expiresAt)}</strong>
-        </span>
-        <span>
-          {participants.length} participant{participants.length > 1 ? "s" : ""}
-        </span>
-      </div>
       {manage && (
         <SettingsDialog onClose={() => setManage(false)}>
           <section className="manage card">
@@ -742,17 +785,21 @@ function Room({ id, me }: { id: string; me: Me }) {
                 setProfileBusy(true);
                 setProfileError("");
                 try {
+                  if (admin && deadline)
+                    resolveDeadline(deadline, serverNow(), session.timeZone);
                   await api(admin ? base : base + "/me", "PATCH", {
                     nickname: profileName,
+                    avatarId: profileAvatar,
                     ...(admin
                       ? {
                           slug: addressDraft,
-                          expiresAt: new Date(deadline).getTime(),
+                          ...(deadline ? { deadline } : {}),
                         }
                       : {}),
                   });
                   await refresh();
                   setManage(false);
+                  setToast("Réglages enregistrés.");
                 } catch (e) {
                   setProfileError((e as Error).message);
                 } finally {
@@ -787,21 +834,23 @@ function Room({ id, me }: { id: string; me: Me }) {
                         }
                       />
                     </div>
-                    <div className="settings-field">
-                      <label htmlFor="new-deadline">
-                        Nouvelle date de suppression —{" "}
-                        {Intl.DateTimeFormat().resolvedOptions().timeZone}
-                      </label>
-                      <input
-                        id="new-deadline"
-                        type="datetime-local"
-                        required
-                        value={deadline}
-                        onChange={(e) => setDeadline(e.target.value)}
-                      />
-                    </div>
                   </>
                 )}
+                <AvatarPicker
+                  value={profileAvatar}
+                  onChange={setProfileAvatar}
+                  disabled={profileBusy}
+                  admin={admin}
+                />
+                <DeadlinePicker
+                  key={session.id}
+                  current={session.expiresAt}
+                  timeZone={session.timeZone}
+                  value={deadline}
+                  onChange={setDeadline}
+                  disabled={profileBusy}
+                  readOnly={!admin}
+                />
               </div>
               {admin && (
                 <div className="settings-delete">
@@ -873,9 +922,6 @@ function Room({ id, me }: { id: string; me: Me }) {
       </nav>
       <div className="workspace">
         <section className="chat-panel" aria-label="Chat commun">
-          <div className="panel-heading">
-            <h2>Messages</h2>
-          </div>
           <div
             className="messages"
             aria-live="polite"
@@ -894,9 +940,9 @@ function Room({ id, me }: { id: string; me: Me }) {
                   }
                   key={p.id}
                 >
-                  <div className="avatar">
-                    {p.nickname.slice(0, 2).toLocaleUpperCase()}
-                  </div>
+                  <span className="person-avatar" aria-hidden="true">
+                    <Avatar id={p.avatarId} decorative />
+                  </span>
                   <div className="message-content">
                     <div className="message-meta">
                       <strong>
@@ -1032,7 +1078,7 @@ function Room({ id, me }: { id: string; me: Me }) {
             <form className="composer" onSubmit={send} ref={form}>
               <textarea
                 aria-label="Votre message"
-                placeholder="Votre message…"
+                placeholder="Une idée, un lien, un petit mot ?"
                 maxLength={20_000}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -1065,9 +1111,6 @@ function Room({ id, me }: { id: string; me: Me }) {
                   <Icon name="plus" />
                   Joindre un fichier
                 </button>
-                <span className="hint keyboard">
-                  Entrée pour envoyer · Maj + Entrée pour une ligne
-                </span>
                 <button
                   className="send"
                   aria-label="Envoyer le message"
