@@ -510,7 +510,7 @@ Après avoir confirmé la présence des quatre secrets, le propriétaire a deman
 
 Les étapes précédentes sur le VPS ont été exécutées manuellement par le propriétaire, qui a conservé ses mots de passe et phrases secrètes. Les opérations suivantes doivent toujours distinguer préparation, exécution et résultat vérifié, et ne jamais publier de secret ni de contenu de session.
 
-## 15. DNS — configuration manuelle à effectuer
+## 15. DNS — enregistrement et résolution validés
 
 Le propriétaire a précisé qu'il effectuera lui-même la configuration DNS dans OVH. Aucun accès à la gestion DNS n'a été fourni à l'agent.
 
@@ -521,11 +521,24 @@ Dans l'espace client OVH : **Web Cloud → Noms de domaine → jlg-consulting.co
 | Type | Sous-domaine | Cible | Usage |
 | --- | --- | --- | --- |
 | A | `share` | `57.129.186.119` | Application JLG Share |
-| A | `media` | `57.129.186.119` | Adresse proposée pour LiveKit, à confirmer par le propriétaire |
+| A | `media` | `57.129.186.119` | LiveKit, adresse retenue lors de l'enregistrement DNS |
 
 Le TTL peut être fixé à 300 secondes si proposé, ou laissé par défaut. Il suffit d'ajouter ces entrées à la zone existante, en préservant les autres services du domaine. Aucun enregistrement AAAA n'est nécessaire pour ce premier démarrage en IPv4.
 
-La création de ces entrées et leur résolution publique restent à confirmer. Le DNS désigne le serveur ; il ne lance ni l'application ni HTTPS. La configuration applicative et le premier déploiement restent nécessaires.
+Le propriétaire a confirmé l'enregistrement des DNS dans OVH. Le 24 octobre 2026, l'agent a vérifié les enregistrements A auprès du serveur DNS OVH `dns.ovh.net` et du résolveur public `1.1.1.1` : les deux noms renvoient bien `57.129.186.119` sur les deux serveurs interrogés. Le TTL observé est de 86 400 secondes (24 heures). Aucun enregistrement AAAA n'a été retourné pour ces deux noms par le serveur OVH.
+
+Les commandes de vérification ont été exécutées depuis PowerShell sur le poste Windows :
+
+```powershell
+Resolve-DnsName share.jlg-consulting.com -Type A -Server dns.ovh.net -DnsOnly
+Resolve-DnsName media.jlg-consulting.com -Type A -Server dns.ovh.net -DnsOnly
+Resolve-DnsName share.jlg-consulting.com -Type A -Server 1.1.1.1 -DnsOnly
+Resolve-DnsName media.jlg-consulting.com -Type A -Server 1.1.1.1 -DnsOnly
+Resolve-DnsName share.jlg-consulting.com -Type AAAA -Server dns.ovh.net -DnsOnly
+Resolve-DnsName media.jlg-consulting.com -Type AAAA -Server dns.ovh.net -DnsOnly
+```
+
+La résolution est validée sur les serveurs interrogés, sans garantir l'état de tous les caches DNS sur Internet. Le DNS désigne le serveur ; il ne lance ni l'application ni HTTPS. La configuration applicative et le premier déploiement restent nécessaires.
 
 Référence : [éditer une zone DNS OVHcloud](https://docs.ovhcloud.com/fr/guides/web-cloud/domains/dns-zone-edit).
 
@@ -545,8 +558,10 @@ Référence : [éditer une zone DNS OVHcloud](https://docs.ovhcloud.com/fr/guide
 
 **Accès GitHub validé :** les quatre secrets de l'environnement `production` permettent le test SSH, Docker et répertoire de livraison depuis GitHub Actions ; le workflow de vérification a réussi.
 
-**Prochaine étape manuelle :** le propriétaire configure les DNS dans OVH. L'agent vérifiera ensuite leur résolution publique.
+**DNS validés :** le propriétaire a enregistré `share` et `media` dans OVH ; les deux noms pointent vers `57.129.186.119`, vérification effectuée auprès d'OVH et de `1.1.1.1`.
 
-**Encore à réaliser :** la configuration des domaines et des secrets applicatifs sur le VPS, le premier déploiement et ses essais, ainsi que la vérification des mises à jour de sécurité automatiques. Aucun déploiement de JLG Share sur le VPS ni activation du déploiement continu n'a été confirmé à ce stade.
+**Prochaine étape :** préparer les paramètres applicatifs de production et le premier déploiement.
+
+**Encore à réaliser :** la configuration des secrets applicatifs et des noms de domaine dans la configuration du VPS, le premier déploiement et ses essais, ainsi que la vérification des mises à jour de sécurité automatiques. Aucun déploiement de JLG Share sur le VPS ni activation du déploiement continu n'a été confirmé à ce stade.
 
 Le [guide de déploiement](DEPLOIEMENT.md) décrit l'architecture et les étapes prévues pour la suite. La clé personnelle d'administration et la future clé GitHub de déploiement doivent rester distinctes. Aucun mot de passe, aucune phrase secrète et aucune clé privée ne doivent être ajoutés à cette documentation.
