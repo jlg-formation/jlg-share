@@ -10,7 +10,8 @@
     "build": "vite build",
     "start": "bun src/server/index.ts",
     "check": "tsc --noEmit",
-    "test": "bun test",
+    "test": "bun test ./tests",
+    "test:e2e": "bunx playwright test",
     "password": "bun scripts/password.ts"
   },
   "dependencies": {
