@@ -131,7 +131,7 @@ test("formateur et stagiaire : session, chat, fichiers et responsive", async ({
       await expect(viewer.locator(".message .avatar")).toHaveCount(0);
       await expect(viewer.locator(".person-avatar svg").first()).toBeVisible();
       const count = viewer.locator(".room-title .participant-count");
-      await expect(count).toHaveText("2 participants");
+      await expect(count).toHaveText("1 formateur + 1 participant");
       await expect(count).toBeInViewport({ ratio: 1 });
       const message = viewer
         .locator(".message")

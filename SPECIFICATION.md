@@ -81,21 +81,31 @@ Une seule session peut couvrir une formation sur plusieurs jours : le formateur 
 
 L'accès se fait par un lien dont le nom n'a pas besoin d'être difficile à deviner. Le formateur peut ajouter un code d'accès ou un mot de passe. Sans cette protection, toute personne disposant du lien ou le découvrant peut rejoindre la session. Les contenus sont communs aux participants, mais ne sont pas publiés dans un catalogue public ni destinés à l'indexation par les moteurs de recherche ; l'absence d'indexation ne constitue pas un contrôle d'accès.
 
+#### Exporter les ressources de la formation
+
+Chaque participant autorisé, formateur compris, peut utiliser « Exporter une archive » à côté de l’échéance dans la barre de statut. Le téléchargement produit un ZIP contenant `discussion.md` et un dossier `fichiers/` avec toutes les pièces jointes encore présentes. Les messages sont classés chronologiquement avec leur auteur, leur date et heure dans le fuseau de la session et la date de dernière modification si applicable. Les publications de fichiers sont représentées au bon endroit dans la discussion par des liens relatifs vers les pièces jointes. Les noms sont sécurisés et distingués, même en cas de fichiers homonymes ; les octets restent inchangés. Le ZIP doit être entièrement extrait avant consultation.
+
+L’archive décrit le contenu présent au début de l’export, sans messages supprimés ni anciennes versions, ni cookies, codes d’accès ou identifiants d’authentification. Les messages sont échappés pour ne pas devenir du HTML exécutable dans le Markdown. Les fichiers déposés ne sont jamais exécutés ni décompressés. L’export fonctionne sans LiveKit, ne change pas la session ni son échéance et ne laisse aucune copie temporaire d’archive sur le serveur. L’accès et l’expiration sont contrôlés côté serveur pendant le téléchargement ; une expiration ou la suppression d’une pièce jointe interrompt l’export. Les exports téléchargés restent chez leurs destinataires après suppression de la session.
+
+Le ZIP est envoyé progressivement, sans compression, pour préserver les ressources du serveur. La limite technique du format ZIP classique est de 65 533 pièces jointes par export ; au-delà, une erreur explicite est retournée. Chaque navigateur peut demander au maximum cinq exports par minute.
+
 #### 3.1.1. Choisir et lire le temps restant
 
-**Objectif UX.** Le formateur raisonne en distance dans le temps : « encore 24 h », « demain à minuit », « dans 3 jours ». Aucun calendrier ni date de calendrier n'apparaît dans le parcours courant. La même interaction est utilisée à la création et dans « Gérer la session ». Les libellés parlent d'effacement pour rendre explicite la disparition des messages et fichiers.
+**Objectif UX.** Le formateur raisonne en distance dans le temps : « encore 24 h », « demain à minuit », « dans 3 jours ». Le choix de l’échéance ne nécessite aucun calendrier ; la date de suppression reste visible dans la barre de statut de l’espace de partage. La même interaction est utilisée à la création et dans « Gérer la session ». Les libellés parlent d'effacement pour rendre explicite la disparition des messages et fichiers.
 
 **Création.** Le bloc porte le libellé « Tout effacer… ». Il présente les choix suivants, dans cet ordre :
 
 | Choix | Effet |
 | --- | --- |
 | Dans 24 h | 24 heures après la validation de la création ; sélectionné par défaut |
+| Dans 48 h | 48 heures après la validation de la création |
+| Dans 72 h | 72 heures après la validation de la création |
 | Ce soir à minuit | À la fin de la journée en cours |
 | Demain à minuit | À la fin de la journée de demain, et non cette nuit |
 | Dans 7 jours | 168 heures après la validation de la création |
 | Autre durée… | Affiche « Dans [nombre] [unité] » ; unités : minutes, heures, jours |
 
-Les quatre raccourcis sont visibles sans ouvrir de menu. Un seul choix peut être actif. « Autre durée… » ouvre une saisie directe, initialement proposée à 3 jours ; le nombre peut être remplacé entièrement au clavier. Seuls les entiers strictement positifs sont acceptés. Un jour de durée vaut 24 heures. Aucune limite arbitraire de 24 h ou 7 jours n'est introduite ; une valeur hors capacité technique est refusée clairement, jamais tronquée silencieusement.
+Les six raccourcis sont visibles sans ouvrir de menu. Un seul choix peut être actif. « Autre durée… » ouvre une saisie directe, initialement proposée à 3 jours ; le nombre peut être remplacé entièrement au clavier. Seuls les entiers strictement positifs sont acceptés. Un jour de durée vaut 24 heures. Aucune limite arbitraire de 24 h ou 7 jours n'est introduite ; une valeur hors capacité technique est refusée clairement, jamais tronquée silencieusement.
 
 Un récapitulatif est visible avant le bouton de création, sans étape de confirmation supplémentaire : « Tout sera effacé dans 24 h. » ou « Tout sera effacé demain à minuit — dans 31 h. » Les valeurs sont calculées à partir du choix courant. Pour les fins de journée, l'indication « à la fin de demain » est disponible à côté du choix pour lever l'ambiguïté du mot minuit.
 
@@ -103,7 +113,7 @@ Un récapitulatif est visible avant le bouton de création, sans étape de confi
 
 Les boutons existants « Annuler » et « Enregistrer » restent les seules actions de validation de la fenêtre. Changer seulement le pseudo ou l'adresse conserve exactement l'échéance enregistrée, même si le bloc a été déplié. « Annuler » abandonne toute modification. En cas d'erreur sur un champ, aucune modification du formulaire n'est enregistrée et les saisies restent disponibles pour correction. Le stagiaire voit le temps restant mais ne peut pas modifier l'échéance.
 
-**Affichage du temps restant.** Les cartes de sessions et l'écran d'entrée utilisent un affichage relatif « Tout sera effacé dans… » ; la fenêtre de gestion affiche « Temps restant : … ». Aucun bandeau d'échéance n'est affiché dans l'espace de partage. Le nombre de participants figure dans l'en-tête, juste après le titre de la formation. Une roue dentée ouvre « Gérer la session », avec ce libellé accessible et une infobulle. Les durées sont présentées ainsi :
+**Affichage du temps restant.** Les cartes de sessions et l'écran d'entrée utilisent un affichage relatif « Tout sera effacé dans… » ; la fenêtre de gestion affiche « Temps restant : … ». Une fine barre de statut reste visible en bas de l’espace de partage pour tous les participants, avec la date, l’année, l’heure et le fuseau de suppression (heure de Paris par défaut). Elle se met à jour lors des modifications d’échéance, sans masquer la saisie ni les ressources, sur ordinateur et mobile dans les deux thèmes. Le compteur « 1 formateur + N participants » figure dans l’en-tête, juste après le titre de la formation : N compte uniquement les stagiaires inscrits à la session, avec « participant » au singulier pour 0 ou 1. Ce compteur ne représente pas une présence en ligne ; il reste actualisé lorsque des stagiaires rejoignent la session. Une roue dentée ouvre « Gérer la session », avec ce libellé accessible et une infobulle. Les durées sont présentées ainsi :
 
 | Temps restant | Exemple |
 | --- | --- |
@@ -317,7 +327,7 @@ Les offres VPS OVHcloud consultées annoncent du trafic illimité en France et u
 19. Le formateur peut modifier l'échéance avant expiration ; une modification arrivée après expiration est refusée et ne réactive pas la session.
 20. Deux demandes simultanées de partage d'écran ne peuvent pas créer deux diffusions sur le VPS, même dans des sessions différentes. L'arrêt ou la perte du diffuseur libère la capacité.
 21. À la création, « Dans 24 h » est présélectionné. Tous les raccourcis sont utilisables en un clic ou au clavier. Une attente de dix minutes avant validation ne réduit pas les 24 heures accordées après validation serveur.
-22. « Ce soir à minuit » et « Demain à minuit » désignent respectivement la fin d'aujourd'hui et de demain en Europe/Paris, y compris aux changements d'heure. « Dans 24 h » et « Dans 7 jours » restent des durées exactes de 24 et 168 heures. Le passage de minuit pendant la saisie ou l'envoi ne provoque pas de décalage silencieux d'une journée.
+22. « Ce soir à minuit » et « Demain à minuit » désignent respectivement la fin d'aujourd'hui et de demain en Europe/Paris, y compris aux changements d'heure. « Dans 24 h », « Dans 48 h », « Dans 72 h » et « Dans 7 jours » restent des durées exactes de 24, 48, 72 et 168 heures. Le passage de minuit pendant la saisie ou l'envoi ne provoque pas de décalage silencieux d'une journée.
 23. « Autre durée… » permet de saisir 3 jours sans calendrier ; les valeurs absentes, nulles, négatives, fractionnaires ou hors capacité sont refusées avec un message associé au champ. Le choix d'une date précise reste accessible et n'est appliqué qu'après validation.
 24. Dans « Gérer la session », modifier uniquement le pseudo ou l'adresse, déplier les choix sans en sélectionner un, ou annuler ne change pas l'échéance. Sélectionner « Dans 24 h » puis enregistrer fixe l'échéance à 24 heures après validation, sans l'ajouter au temps restant. Un refus sur le pseudo ou l'adresse conserve aussi l'ancienne échéance.
 25. Les cartes, l'écran d'entrée et la gestion affichent un temps restant cohérent sans date de calendrier dans le parcours courant. Vérifier les seuils de 48 h, 1 h et 1 min, le passage de minuit, le retour d'un onglet en veille, la reconnexion, la mise à jour chez les participants et l'expiration sans durée négative. Les sessions existantes gardent exactement leur échéance.

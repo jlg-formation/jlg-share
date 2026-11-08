@@ -700,6 +700,9 @@ function Room({ id, me }: { id: string; me: Me }) {
     );
   const { session, publications, participants } = snapshot;
   const admin = snapshot.me.admin;
+  const traineeCount = participants.filter(
+    (participant) => !participant.admin,
+  ).length;
   const sharedFiles = publications.filter((p) => p.kind === "file");
   return (
     <div
@@ -724,8 +727,8 @@ function Room({ id, me }: { id: string; me: Me }) {
         <div className="room-title">
           <h1 title={session.title}>{session.title}</h1>
           <span className="participant-count">
-            {participants.length} participant
-            {participants.length > 1 ? "s" : ""}
+            1 formateur + {traineeCount} participant
+            {traineeCount > 1 ? "s" : ""}
           </span>
           {!connected && (
             <span className="connection" role="status">
@@ -1173,6 +1176,32 @@ function Room({ id, me }: { id: string; me: Me }) {
           </section>
           <Screen sessionId={session.id} admin={admin} />
         </aside>
+      </div>
+      <div
+        className="session-status"
+        role="contentinfo"
+        aria-label="Suppression de la session"
+      >
+        <span>
+          Suppression le{" "}
+          <time dateTime={new Date(session.expiresAt).toISOString()}>
+            {new Intl.DateTimeFormat("fr-FR", {
+              timeZone: session.timeZone,
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }).format(session.expiresAt)}
+          </time>{" "}
+          ·{" "}
+          {session.timeZone === "Europe/Paris"
+            ? "heure de Paris"
+            : session.timeZone}
+        </span>
+        <a className="archive-link" href={"/api" + base + "/archive"} download>
+          Exporter une archive
+        </a>
       </div>
       {toast && (
         <div className="toast" role="status">

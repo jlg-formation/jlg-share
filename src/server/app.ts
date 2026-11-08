@@ -8,6 +8,7 @@ import { suggestAddress } from "../shared/address";
 import type { MediaService } from "./media";
 import { allowsOrigin } from "./origin";
 import { resolveDeadline, SESSION_TIMEZONE } from "../shared/deadline";
+import { sessionArchive } from "./archive";
 
 export type Config = {
   origin: string;
@@ -376,6 +377,10 @@ export function createApp(store: Store, config: Config, media?: MediaService) {
       return json({ ok: true });
     }
     const actor = store.actor(sessionId, browserId);
+    if (action === "archive" && req.method === "GET") {
+      rate("archive:" + browserId, 5);
+      return sessionArchive(store, sessionId, browserId);
+    }
     if (action === "me" && req.method === "PATCH") {
       const input = await body(req);
       store.rename(sessionId, browserId, input.nickname, input.avatarId);

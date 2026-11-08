@@ -1016,6 +1016,32 @@ body:has(.room-layout) {
   height: 4px;
   accent-color: var(--green);
 }
+.session-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  column-gap: 16px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--subtle);
+  color: var(--muted);
+  padding: 5px 12px calc(5px + env(safe-area-inset-bottom));
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.archive-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--green);
+  text-underline-offset: 3px;
+}
+.room-layout > .toast {
+  bottom: calc(62px + env(safe-area-inset-bottom));
+}
 .toast {
   position: fixed;
   bottom: 22px;
@@ -1116,9 +1142,12 @@ body:has(.room-layout) {
     display: none;
   }
   .room-title {
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
   }
   .room-title h1 {
+    max-width: 100%;
     font-size: 0.875rem;
   }
   .room-actions {

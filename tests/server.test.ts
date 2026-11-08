@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/server/store";
 import { createApp } from "../src/server/app";
+import { readZip } from "./zip-reader";
 let store: Store;
 let app: ReturnType<typeof createApp>;
 let dir: string;
@@ -947,4 +948,139 @@ test("API handles midnight choices and exact fallback without depending on the c
       )
     ).status,
   ).toBe(400);
+});
+
+test("archive: complete Markdown, unchanged files, authorization and expiration", async () => {
+  const a = await admin();
+  const s = await session(a, "secret-code");
+  const base = "/api/sessions/" + s;
+  const alice = await client();
+  const outsider = await client();
+  expect((await request(base + "/archive")).status).toBe(401);
+  expect(
+    (await request(base + "/archive", "GET", undefined, outsider)).status,
+  ).toBe(403);
+  await request(
+    base + "/join",
+    "POST",
+    { nickname: "Alice", code: "secret-code" },
+    alice,
+  );
+  await request(
+    base + "/messages",
+    "POST",
+    { text: "Bonjour <script>alert(1)</script>\nDeuxième ligne" },
+    alice,
+  );
+  const content = new Uint8Array([0, 255, 10, 13, 42]);
+  for (const filename of ["cours été.pdf", "cours été.pdf", "../CON:<x>.zip"]) {
+    const response = await app.fetch(
+      new Request(origin + base + "/files", {
+        method: "POST",
+        headers: {
+          origin,
+          cookie: a,
+          "x-file-name": encodeURIComponent(filename),
+          "x-file-size": String(content.length),
+        },
+        body: content,
+      }),
+    );
+    expect(response!.status).toBe(201);
+  }
+  const response = await request(base + "/archive", "GET", undefined, alice);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("content-type")).toBe("application/zip");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const entries = readZip(await response.bytes());
+  expect(entries.size).toBe(4);
+  const md = entries.get("discussion.md")!.toString();
+  expect(md).toContain("Alice");
+  expect(md).toContain("Formateur (admin)");
+  expect(md).toContain("Europe/Paris");
+  expect(md).toContain("&lt;script&gt;");
+  expect(md).not.toContain("secret-code");
+  expect(md).not.toContain("browserId");
+  expect(md).toContain("Deuxième ligne");
+  const names = [...entries.keys()].filter((name) => name !== "discussion.md");
+  expect(new Set(names.map((name) => name.toLowerCase())).size).toBe(3);
+  for (const name of names) {
+    expect(name.startsWith("fichiers/")).toBe(true);
+    expect(name.split("/")).toHaveLength(2);
+    expect(entries.get(name)).toEqual(Buffer.from(content));
+    expect(md).toContain(name.split("/").map(encodeURIComponent).join("/"));
+  }
+  const snapshot = await (
+    await request(base + "/snapshot", "GET", undefined, alice)
+  ).json();
+  const messageId = snapshot.publications.find(
+    (p: { kind: string }) => p.kind === "text",
+  ).id;
+  await request(
+    base + "/messages/" + messageId,
+    "PATCH",
+    { text: "Version finale" },
+    alice,
+  );
+  const edited = readZip(
+    await (await request(base + "/archive", "GET", undefined, alice)).bytes(),
+  )
+    .get("discussion.md")!
+    .toString();
+  expect(edited).toContain("Version finale");
+  expect(edited).toContain("Modifié le");
+  expect(edited).not.toContain("Deuxième ligne");
+  const active = await request(base + "/archive", "GET", undefined, alice);
+  const reader = active.body!.getReader();
+  await reader.read();
+  clock += 3_600_001;
+  await expect(reader.read()).rejects.toThrow();
+  expect(
+    (await request(base + "/archive", "GET", undefined, alice)).status,
+  ).toBe(404);
+});
+
+test("archive: empty session, CRC32, cancellation and deletion during transfer", async () => {
+  const a = await admin();
+  const s = await session(a);
+  const base = "/api/sessions/" + s;
+  const empty = readZip(
+    await (await request(base + "/archive", "GET", undefined, a)).bytes(),
+  );
+  expect(empty.size).toBe(1);
+  expect(empty.get("discussion.md")!.toString()).toContain(
+    "Aucun message ni fichier partagé",
+  );
+  await app.fetch(
+    new Request(origin + base + "/files", {
+      method: "POST",
+      headers: {
+        origin,
+        cookie: a,
+        "x-file-name": "test.txt",
+        "x-file-size": "9",
+      },
+      body: "123456789",
+    }),
+  );
+  const bytes = Buffer.from(
+    await (await request(base + "/archive", "GET", undefined, a)).bytes(),
+  );
+  let central = bytes.readUInt32LE(bytes.length - 6);
+  central += 46 + bytes.readUInt16LE(central + 28);
+  expect(bytes.readUInt32LE(central + 16)).toBe(0xcbf43926);
+  const cancelled = await request(base + "/archive", "GET", undefined, a);
+  const cancelReader = cancelled.body!.getReader();
+  await cancelReader.read();
+  await cancelReader.cancel();
+  const active = await request(base + "/archive", "GET", undefined, a);
+  const reader = active.body!.getReader();
+  await reader.read();
+  const file = store.publications(s).find((p) => p.kind === "file")!;
+  await request(base + "/files/" + file.id, "DELETE", undefined, a);
+  await expect(
+    (async () => {
+      while (!(await reader.read()).done) {}
+    })(),
+  ).rejects.toThrow();
 });

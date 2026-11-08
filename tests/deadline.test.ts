@@ -63,6 +63,11 @@ test("civil midnight follows Paris daylight saving while durations stay exact", 
     expect(
       resolveDeadline({ kind: "duration", amount: 7, unit: "days" }, now) - now,
     ).toBe(168 * HOUR);
+    for (const amount of [48, 72]) {
+      expect(
+        resolveDeadline({ kind: "duration", amount, unit: "hours" }, now) - now,
+      ).toBe(amount * HOUR);
+    }
     expect(zonedLocal(tonight).slice(11)).toBe("00:00");
     expect(deadlineText(tomorrow, now)).toContain("demain à minuit");
   }

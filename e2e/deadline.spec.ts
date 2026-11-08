@@ -12,6 +12,10 @@ test("relative deadline keyboard navigation, cancel, exact fallback and mobile t
   await expect(day).toBeChecked();
   await day.focus();
   await day.press("ArrowRight");
+  await expect(page.getByRole("radio", { name: "Dans 48 h" })).toBeChecked();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("radio", { name: "Dans 72 h" })).toBeChecked();
+  await page.keyboard.press("ArrowRight");
   await expect(
     page.getByRole("radio", { name: "Ce soir à minuit" }),
   ).toBeChecked();
@@ -37,7 +41,7 @@ test("relative deadline keyboard navigation, cancel, exact fallback and mobile t
   expect(before.expiresAt - Date.now()).toBeGreaterThan(86_300_000);
   await expect(page.getByText(/Tout sera effacé/)).toHaveCount(0);
   await expect(page.locator(".topbar .participant-count")).toHaveText(
-    "1 participant",
+    "1 formateur + 0 participant",
   );
   await page.getByRole("button", { name: "Gérer la session" }).click();
   const dialog = page.getByRole("dialog");
@@ -88,3 +92,47 @@ test("relative deadline keyboard navigation, cancel, exact fallback and mobile t
   const after = await (await page.request.get(path)).json();
   expect(after.expiresAt - Date.now()).toBeGreaterThan(3 * 86_400_000 - 60_000);
 });
+
+for (const hours of [48, 72]) {
+  test(hours + " hour preset creation and settings", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByLabel("Mot de passe administrateur")
+      .fill("e2e-only-password");
+    await page.getByRole("button", { name: "Ouvrir mon espace" }).click();
+    await page
+      .getByRole("radio", { name: "Dans " + hours + " h", exact: true })
+      .check();
+    await page
+      .getByLabel("Titre de la session")
+      .fill("Formation " + hours + " h");
+    const start = Date.now();
+    await page
+      .getByRole("button", { name: "Créer et ouvrir la session" })
+      .click();
+    await expect(page.getByLabel("Votre message")).toBeVisible();
+    const path = "/api/sessions/" + new URL(page.url()).pathname.slice(1);
+    const created = await (await page.request.get(path)).json();
+    expect(created.expiresAt).toBeGreaterThanOrEqual(start + hours * 3_600_000);
+    expect(created.expiresAt).toBeLessThanOrEqual(
+      Date.now() + hours * 3_600_000,
+    );
+    await page.getByRole("button", { name: "Gérer la session" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Modifier", exact: true }).click();
+    const next = hours === 48 ? 72 : 48;
+    await dialog
+      .getByRole("radio", { name: "Dans " + next + " h", exact: true })
+      .check();
+    const saved = Date.now();
+    await dialog
+      .getByRole("button", { name: "Enregistrer", exact: true })
+      .click();
+    await expect(dialog).toBeHidden();
+    const updated = await (await page.request.get(path)).json();
+    expect(updated.expiresAt).toBeGreaterThanOrEqual(saved + next * 3_600_000);
+    expect(updated.expiresAt).toBeLessThanOrEqual(
+      Date.now() + next * 3_600_000,
+    );
+  });
+}

@@ -94,7 +94,11 @@ export function DeadlinePicker({
       : value?.kind === "duration"
         ? value.amount === 7 && value.unit === "days"
           ? "week"
-          : "day"
+          : value.unit === "hours" && value.amount === 48
+            ? "twoDays"
+            : value.unit === "hours" && value.amount === 72
+              ? "threeDays"
+              : "day"
         : value?.kind;
   let preview: number | null = null,
     error = "";
@@ -109,6 +113,12 @@ export function DeadlinePicker({
     setMode(key);
     if (key === "day")
       onChange({ kind: "duration", amount: 24, unit: "hours" });
+    if (key === "twoDays" || key === "threeDays")
+      onChange({
+        kind: "duration",
+        amount: key === "twoDays" ? 48 : 72,
+        unit: "hours",
+      });
     if (key === "week") onChange({ kind: "duration", amount: 7, unit: "days" });
     if (key === "tonight" || key === "tomorrow") onChange({ kind: key, day });
     if (key === "custom")
@@ -153,6 +163,8 @@ export function DeadlinePicker({
             <div className="deadline-shortcuts">
               {[
                 ["day", "Dans 24 h"],
+                ["twoDays", "Dans 48 h"],
+                ["threeDays", "Dans 72 h"],
                 ["tonight", "Ce soir à minuit"],
                 ["tomorrow", "Demain à minuit"],
                 ["week", "Dans 7 jours"],
@@ -180,6 +192,8 @@ export function DeadlinePicker({
                     onKeyDown={(e) => {
                       const keys = [
                         "day",
+                        "twoDays",
+                        "threeDays",
                         "tonight",
                         "tomorrow",
                         "week",
@@ -196,7 +210,7 @@ export function DeadlinePicker({
                         e.key === "Home"
                           ? 0
                           : e.key === "End"
-                            ? 4
+                            ? keys.length - 1
                             : (keys.indexOf(key) + step + keys.length) %
                               keys.length;
                       select(keys[next]);
